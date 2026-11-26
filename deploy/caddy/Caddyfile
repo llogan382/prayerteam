@@ -1,0 +1,30 @@
+# Origin for CloudFront's /api/* behaviour (ADR 0005).
+#
+# With ORIGIN_SITE set to the origin hostname, Caddy gets and renews a Let's
+# Encrypt certificate over HTTP-01 on port 80 and redirects every other port
+# 80 request to HTTPS. The CI stand-in sets ORIGIN_SITE to http://:80.
+
+{
+	servers {
+		# Only CloudFront can reach 443 (security group prefix list), and port
+		# 80 only redirects, so every proxied request came through CloudFront.
+		# Trusting it keeps CloudFront's X-Forwarded-For and appends the
+		# CloudFront address, rather than replacing the header.
+		trusted_proxies static 0.0.0.0/0 ::/0
+	}
+}
+
+{$ORIGIN_SITE} {
+	# Only our distribution sends this header; other CloudFront distributions
+	# share the prefix list but not the secret.
+	@fromOurDistribution header X-Origin-Secret {$ORIGIN_SECRET}
+
+	handle @fromOurDistribution {
+		# Written by deploy.sh into its state directory: reverse_proxy <slot>:3000.
+		import /etc/caddy-state/upstream.caddy
+	}
+
+	handle {
+		respond 403
+	}
+}

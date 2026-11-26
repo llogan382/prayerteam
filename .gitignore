@@ -16,3 +16,6 @@ blob-report/
 .DS_Store
 *.log
 .env*.local
+
+# AWS CDK
+cdk.out/

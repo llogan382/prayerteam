@@ -9,7 +9,9 @@
     "dev": "turbo run dev",
     "export:web": "turbo run export:web",
     "test:e2e": "turbo run test:e2e",
-    "ci": "turbo run test:e2e"
+    "ci": "turbo run check-types test test:e2e",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "turbo": "catalog:"

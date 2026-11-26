@@ -1,0 +1,7 @@
+{
+  "app": "node bin/app.ts",
+  "context": {
+    "githubRepo": "llogan382/prayerteam",
+    "@aws-cdk/core:defaultCrossStackReferences": "strong"
+  }
+}

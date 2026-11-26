@@ -1,0 +1,66 @@
+# The production compose project on the API instance (ADR 0005). deploy.sh
+# drives it; nothing else should run `docker compose up` here. Caddy is the
+# only service that publishes host ports. `blue` and `green` are the two
+# server slots: one is active, the other is idle or mid-deploy.
+name: prayerteam
+
+x-server: &server
+  restart: unless-stopped
+  env_file: state/server.env
+  environment:
+    PORT: "3000"
+    # Two server processes and Caddy must fit in 1 GB next to Docker.
+    NODE_OPTIONS: --max-old-space-size=224
+  mem_limit: 320m
+  # Longer than the server's own job grace period, so in-flight requests and
+  # jobs finish before Docker sends SIGKILL.
+  stop_grace_period: 40s
+  logging: &awslogs
+    driver: awslogs
+    options:
+      awslogs-region: ${AWS_REGION:-us-east-1}
+      awslogs-group: ${CONTAINER_LOG_GROUP:-unset}
+      tag: "{{.Name}}"
+      mode: non-blocking
+
+services:
+  caddy:
+    image: caddy:2.11.9-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ORIGIN_SITE: ${ORIGIN_SITE:-${ORIGIN_DOMAIN:-unset}}
+      ORIGIN_SECRET: ${ORIGIN_SECRET:?ORIGIN_SECRET must be set}
+    volumes:
+      # Directories, not single files, so deploy.sh's atomic rewrite of
+      # upstream.caddy is visible to `caddy reload`. state/ is written only
+      # by deploy.sh, never by the deploy file copy.
+      - ./caddy:/etc/caddy:ro
+      - ./state:/etc/caddy-state:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 64m
+    logging: *awslogs
+
+  blue:
+    <<: *server
+    image: ${BLUE_IMAGE:-unset}
+
+  green:
+    <<: *server
+    image: ${GREEN_IMAGE:-unset}
+
+  # One-off: `docker compose run --rm migrate` with MIGRATE_IMAGE set.
+  migrate:
+    image: ${MIGRATE_IMAGE:-unset}
+    command: ["migrate"]
+    env_file: state/server.env
+    restart: "no"
+    profiles: ["tools"]
+    logging: *awslogs
+
+volumes:
+  caddy_data:
+  caddy_config:

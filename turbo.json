@@ -29,6 +29,16 @@
       "passThroughEnv": [
         "CI"
       ]
+    },
+    "check-types": {
+      "dependsOn": [
+        "topo"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "topo"
+      ]
     }
   }
 }
