@@ -1,0 +1,17 @@
+{
+  "name": "prayerteam",
+  "private": true,
+  "packageManager": "pnpm@12.23.0",
+  "engines": {
+    "node": ">=24.12"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "export:web": "turbo run export:web",
+    "test:e2e": "turbo run test:e2e",
+    "ci": "turbo run test:e2e"
+  },
+  "devDependencies": {
+    "turbo": "catalog:"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "@prayerteam/mobile",
+  "private": true,
+  "version": "0.1.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "export:web": "expo export --platform web --output-dir dist",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "catalog:",
+    "expo": "catalog:",
+    "expo-constants": "catalog:",
+    "expo-linking": "catalog:",
+    "expo-router": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-native": "catalog:",
+    "react-native-safe-area-context": "catalog:",
+    "react-native-screens": "catalog:",
+    "react-native-web": "catalog:"
+  },
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "typescript": "catalog:"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "typescript"
+      ]
+    }
+  }
+}

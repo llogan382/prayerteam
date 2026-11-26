@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Prayer Team",
+    "slug": "prayerteam",
+    "scheme": "prayerteam",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-router"],
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    }
+  }
+}
