@@ -1,6 +1,11 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "tasks": {
+    "topo": {
+      "dependsOn": [
+        "^topo"
+      ]
+    },
     "dev": {
       "cache": false,
       "persistent": true
@@ -8,6 +13,9 @@
     "export:web": {
       "outputs": [
         "dist/**"
+      ],
+      "dependsOn": [
+        "topo"
       ]
     },
     "test:e2e": {

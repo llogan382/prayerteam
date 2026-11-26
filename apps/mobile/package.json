@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "catalog:",
+    "@prayerteam/domain": "workspace:*",
     "expo": "catalog:",
     "expo-constants": "catalog:",
     "expo-linking": "catalog:",
