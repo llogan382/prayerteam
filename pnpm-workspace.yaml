@@ -30,6 +30,9 @@ catalog:
   react-native-safe-area-context: ~5.11.1
   react-native-screens: ~4.30.1
   "@types/react": 19.3.0
+  # API server (apps/server, ADR 0002)
+  fastify: 5.12.8
+  fastify-type-provider-zod: 7.0.0
   # Infrastructure (infra workspace, ADR 0005)
   aws-cdk-lib: 2.278.0
   aws-cdk: 2.1149.0
