@@ -7,7 +7,7 @@ describe("OpenAPI document", () => {
   it("contains every route, all under /api", async () => {
     const document = openApiDocument(await testApp());
     expect(document.openapi).toMatch(/^3\./);
-    expect(Object.keys(document.paths ?? {}).sort()).toEqual(["/api/health", "/api/meta", "/api/placeholder-items"]);
+    expect(Object.keys(document.paths ?? {}).sort()).toEqual(["/api/health", "/api/me", "/api/meta", "/api/placeholder-items"]);
   });
 
   it("describes responses from their Zod schemas", async () => {

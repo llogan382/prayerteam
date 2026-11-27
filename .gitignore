@@ -19,3 +19,6 @@ blob-report/
 
 # AWS CDK
 cdk.out/
+
+# Better Auth's raw generated schema (apps/server auth:generate)
+.better-auth/

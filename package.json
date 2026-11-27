@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "docker compose up --detach --wait && turbo run dev",
     "db:migrate": "pnpm --filter @prayerteam/db db:migrate",
+    "db:seed": "pnpm --filter @prayerteam/server seed",
     "export:web": "turbo run export:web",
     "generate": "turbo run generate",
     "test:e2e": "turbo run test:e2e",

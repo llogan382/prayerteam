@@ -13,9 +13,10 @@ Run from the repository root.
 | `pnpm install` | Install every workspace package. |
 | `pnpm dev` | Start Postgres (Docker Compose), then the API (`node --watch`, port 3000) and the Expo dev server together. The web app reaches `/api` through the dev server's proxy. |
 | `pnpm db:migrate` | Apply the committed migrations in `packages/db/migrations` to the local database. |
+| `pnpm db:seed` | Create the demo Account ("Sam Demo", `demo@prayerteam.example`, password `pray-for-one-another`) in the local database. Safe to run again. |
 | `pnpm generate` | Write `apps/server/openapi.json` from the routes, then the typed client in `packages/api-client`. Commit both; CI fails if they are stale. |
 | `pnpm typecheck` | Type-check every package that has a `typecheck` script. |
-| `pnpm test` | Unit and integration tests: the API through `inject()`, `packages/db` against real Postgres (start it with `docker compose up -d`), and the CDK assertions. |
+| `pnpm test` | Unit and integration tests: the API through `inject()` and `packages/db`, both against real Postgres (start it with `docker compose up -d`), and the CDK assertions. |
 | `pnpm export:web` | Build the static web app into `apps/mobile/dist`. |
 | `pnpm test:e2e` | Build the web app, start the API and a CloudFront-like static server, and run Playwright in Chromium and WebKit. |
 | `pnpm run ci` | Everything CI runs: `typecheck`, `test`, `db:check` (`drizzle-kit check`), `synth:check` (CDK synth with no AWS access) and `test:e2e`. |

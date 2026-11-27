@@ -106,6 +106,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description The app's version, MAJOR.MINOR.PATCH. Below the platform's minimum: 426 upgrade_required. */
+                    "x-app-version"?: components["parameters"]["AppVersion"];
+                    /** @description Required with the version header. web is never blocked. */
+                    "x-app-platform"?: components["parameters"]["AppPlatform"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: email */
+                            email: string;
+                            displayName: string;
+                        };
+                    };
+                };
+                /** @description An error, as RFC 9457 problem+json. Branch on `code`. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/placeholder-items": {
         parameters: {
             query?: never;
@@ -175,7 +230,7 @@ export interface components {
             title: string;
             status: number;
             /** @enum {string} */
-            code: "validation_failed" | "invalid_cursor" | "invalid_app_version" | "upgrade_required" | "not_found" | "internal_error";
+            code: "validation_failed" | "invalid_cursor" | "invalid_app_version" | "upgrade_required" | "not_found" | "internal_error" | "unauthenticated";
             detail?: string;
             errors?: {
                 path: string;

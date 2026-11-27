@@ -38,7 +38,7 @@ describe("errors", () => {
     const app = await testApp({
       logger: logs.logger,
       testRoutes: async (api) => {
-        api.get("/test/crash", async () => {
+        api.get("/test/crash", { config: { public: true } }, async () => {
           throw new Error("database password is hunter2");
         });
       },
@@ -60,6 +60,7 @@ describe("errors", () => {
     api.withTypeProvider<ZodTypeProvider>().post(
       "/test/validated",
       {
+        config: { public: true },
         schema: {
           querystring: z.object({ limit: z.coerce.number().int().max(100).optional() }),
           body: z.object({ items: z.array(z.object({ name: z.string().min(1) })) }),

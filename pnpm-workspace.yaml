@@ -35,6 +35,10 @@ catalog:
   fastify-type-provider-zod: 7.0.0
   "@fastify/swagger": 9.9.5
   openapi-types: 12.1.3
+  # Auth (apps/server, ADR 0003). `auth` is Better Auth's CLI, used only to
+  # generate its tables into packages/db.
+  better-auth: 1.7.28
+  auth: 1.7.28
   # Typed API client (packages/api-client, ADR 0002)
   openapi-typescript: 7.13.0
   openapi-fetch: 0.17.0

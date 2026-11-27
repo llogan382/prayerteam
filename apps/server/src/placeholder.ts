@@ -18,7 +18,7 @@ const cursor = cursorCodec(z.object({ afterId: z.string() }));
 export const placeholderRoutes: FastifyPluginAsync = async (api) => {
   api.withTypeProvider<ZodTypeProvider>().get(
     "/placeholder-items",
-    { schema: { querystring: ListQuery, response: { 200: PlaceholderItemPage } } },
+    { config: { public: true }, schema: { querystring: ListQuery, response: { 200: PlaceholderItemPage } } },
     async (request) => {
       const { limit } = request.query;
       const afterId =

@@ -14,6 +14,7 @@ export const problemCodes = [
   "upgrade_required",
   "not_found",
   "internal_error",
+  "unauthenticated",
 ] as const;
 export const ProblemCode = z.enum(problemCodes);
 export type ProblemCode = z.infer<typeof ProblemCode>;

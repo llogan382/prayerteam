@@ -1,4 +1,5 @@
-import { HealthResponse, MetaResponse, productName } from "@prayerteam/domain";
+import type { Database } from "@prayerteam/db";
+import { HealthResponse, MeResponse, MetaResponse, productName } from "@prayerteam/domain";
 import swagger from "@fastify/swagger";
 import Fastify, { type FastifyPluginAsync, type FastifyServerOptions } from "fastify";
 import {
@@ -7,6 +8,8 @@ import {
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import serverPackage from "../package.json" with { type: "json" };
+import { type Auth, type AuthConfig, createAuth } from "./auth/auth.ts";
+import { mountAuth, requireSession } from "./auth/routes.ts";
 import { openApiComponents, transformRoute } from "./openapi.ts";
 import { placeholderRoutes } from "./placeholder.ts";
 import { handleProblems } from "./problems.ts";
@@ -18,15 +21,28 @@ export interface AppConfig {
   logger: FastifyServerOptions["logger"];
   // The iOS and Android minimum app versions, read on every checked request.
   minimumVersions: MinimumVersionsProvider;
+  // The app's Postgres (packages/db). Better Auth's tables live there too.
+  database: Database;
+  auth: AuthConfig;
   // Extra routes under /api for tests only, such as a handler that throws
-  // or returns undeclared fields. Production never sets it.
+  // or returns undeclared fields. Protected like every route unless they set
+  // `config: { public: true }`. Production never sets it.
   testRoutes?: FastifyPluginAsync;
+}
+
+declare module "fastify" {
+  interface FastifyInstance {
+    // Better Auth, for server-side Account operations such as createAccount.
+    auth: Auth;
+  }
 }
 
 // Builds a ready Fastify instance without listening. Tests call it with
 // inject(); main.ts is the only caller that listens.
 export async function buildApp(config: AppConfig) {
   const app = Fastify({ logger: config.logger }).withTypeProvider<ZodTypeProvider>();
+  const auth = createAuth(config.database, config.auth);
+  app.decorate("auth", auth);
   // Requests are validated and responses serialized through their Zod
   // schemas from `domain`, so the app and the API share one contract.
   app.setValidatorCompiler(validatorCompiler);
@@ -47,20 +63,25 @@ export async function buildApp(config: AppConfig) {
   await app.register(
     async (api) => {
       api.addHook("onRequest", appVersionCheck(config.minimumVersions));
+      api.addHook("onRequest", requireSession(auth));
+      mountAuth(api, auth, config.auth.baseUrl);
 
       // Liveness only: no database, and no app version check
       // (unversionedRoutes in version-check.ts).
       api.get(
         "/health",
-        { schema: { response: { 200: HealthResponse } } },
+        { config: { public: true }, schema: { response: { 200: HealthResponse } } },
         async () => ({ status: "ok" as const }),
       );
 
       api.get(
         "/meta",
-        { schema: { response: { 200: MetaResponse } } },
+        { config: { public: true }, schema: { response: { 200: MetaResponse } } },
         async () => ({ name: productName, minimumVersions: await config.minimumVersions() }),
       );
+
+      // The signed-in Account (#32).
+      api.get("/me", { schema: { response: { 200: MeResponse } } }, async (request) => request.account);
 
       await api.register(placeholderRoutes);
 

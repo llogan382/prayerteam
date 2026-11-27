@@ -6,7 +6,7 @@ describe("responses", () => {
   it("contain only the fields their schema declares", async () => {
     const app = await testApp({
       testRoutes: async (api) => {
-        api.get("/test/leaky", { schema: { response: { 200: MetaResponse } } }, async () => ({
+        api.get("/test/leaky", { config: { public: true }, schema: { response: { 200: MetaResponse } } }, async () => ({
           name: "Prayer Team",
           minimumVersions: { ios: "1.0.0", android: "1.0.0" },
           passwordHash: "must not leak",
