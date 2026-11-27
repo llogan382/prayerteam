@@ -1,76 +1,85 @@
-import { PlaceholderItemPage, Problem } from "@prayerteam/domain";
+import { ListQuery } from "@prayerteam/domain";
 import { describe, expect, it } from "vitest";
-import type { App } from "../src/app.ts";
-import { testApp } from "./app.ts";
+import { z } from "zod";
+import { keysetPagination } from "../src/pagination.ts";
+import { expectProblemError } from "./problem.ts";
 
-type ItemPage = ReturnType<typeof PlaceholderItemPage.parse>;
+// The pagination module through its interface, over an in-memory list: no
+// app, no database. Each list endpoint keeps only a thin route test.
+const ids = (count: number) => Array.from({ length: count }, (_, i) => i + 1);
 
-async function getPage(app: App, query: Record<string, string>) {
-  return app.inject({ method: "GET", url: `/api/placeholder-items?${new URLSearchParams(query)}` });
+function numberList(count: number) {
+  const items = ids(count);
+  const fetches: { after: number | undefined; limit: number }[] = [];
+  const pagination = keysetPagination({
+    position: z.object({ after: z.number().int() }),
+    keyOf: (item: number) => ({ after: item }),
+  });
+  return {
+    fetches,
+    page: (query: { cursor?: string; limit?: number }) =>
+      pagination.page(ListQuery.parse(query), (after, limit) => {
+        fetches.push({ after: after?.after, limit });
+        return items.filter((item) => after === undefined || item > after.after).slice(0, limit);
+      }),
+  };
 }
 
 // Follows nextCursor from the first page to the last.
-async function walk(app: App, limit: number): Promise<ItemPage[]> {
-  const pages: ItemPage[] = [];
+async function walk(list: ReturnType<typeof numberList>, limit: number) {
+  const pages: { items: number[]; nextCursor: string | null }[] = [];
   let cursor: string | null = null;
   do {
-    const response = await getPage(app, { limit: String(limit), ...(cursor === null ? {} : { cursor }) });
-    expect(response.statusCode).toBe(200);
-    const page = PlaceholderItemPage.parse(response.json());
+    const page = await list.page({ limit, ...(cursor === null ? {} : { cursor }) });
     pages.push(page);
     cursor = page.nextCursor;
   } while (cursor !== null && pages.length < 100);
   return pages;
 }
 
-async function expectInvalidCursor(app: App, cursor: string) {
-  const response = await getPage(app, { cursor });
-  expect(response.statusCode).toBe(400);
-  expect(response.headers["content-type"]).toMatch(/^application\/problem\+json/);
-  expect(Problem.parse(response.json())).toMatchObject({ status: 400, code: "invalid_cursor" });
-}
-
-describe("GET /api/placeholder-items", () => {
+describe("keyset pagination", () => {
   it("returns every item exactly once, in order, across pages", async () => {
-    const pages = await walk(await testApp(), 10);
-    const ids = pages.flatMap((page) => page.items.map((item) => item.id));
-    expect(ids).toEqual(Array.from({ length: 25 }, (_, i) => `item-${String(i + 1).padStart(3, "0")}`));
+    const pages = await walk(numberList(25), 10);
+    expect(pages.flatMap((page) => page.items)).toEqual(ids(25));
     expect(pages.map((page) => page.items.length)).toEqual([10, 10, 5]);
   });
 
-  it("ends with nextCursor null on the last page, including an exact fit", async () => {
-    const app = await testApp();
-    for (const limit of [5, 25, 100]) {
-      const pages = await walk(app, limit);
-      expect(pages.at(-1)!.nextCursor, `limit ${limit}`).toBeNull();
-      expect(pages.slice(0, -1).every((page) => page.nextCursor !== null)).toBe(true);
-      expect(pages.flatMap((page) => page.items)).toHaveLength(25);
-    }
+  it.each([5, 25, 100])("ends with nextCursor null on the last page at limit %i, including an exact fit", async (limit) => {
+    const pages = await walk(numberList(25), limit);
+    expect(pages.at(-1)!.nextCursor).toBeNull();
+    expect(pages.slice(0, -1).every((page) => page.nextCursor !== null)).toBe(true);
+    expect(pages.flatMap((page) => page.items)).toEqual(ids(25));
+  });
+
+  it("answers an empty list with one empty last page", async () => {
+    expect(await numberList(0).page({})).toEqual({ items: [], nextCursor: null });
+  });
+
+  it("asks for one more than the limit, after the previous page's last key", async () => {
+    const list = numberList(25);
+    await walk(list, 10);
+    expect(list.fetches).toEqual([
+      { after: undefined, limit: 11 },
+      { after: 10, limit: 11 },
+      { after: 20, limit: 11 },
+    ]);
   });
 
   it("uses the default limit of 20 when none is given", async () => {
-    const response = await getPage(await testApp(), {});
-    expect(PlaceholderItemPage.parse(response.json()).items).toHaveLength(20);
-  });
-
-  it("rejects a limit above the maximum with validation_failed", async () => {
-    const response = await getPage(await testApp(), { limit: "101" });
-    expect(response.statusCode).toBe(400);
-    const problem = Problem.parse(response.json());
-    expect(problem).toMatchObject({ code: "validation_failed" });
-    expect(problem.errors?.map((error) => error.path)).toEqual(["limit"]);
+    expect((await numberList(25).page({})).items).toHaveLength(20);
   });
 
   it.each([
     ["garbage", "!!!not-a-cursor!!!"],
     ["empty", ""],
+    ["another list's", Buffer.from(JSON.stringify({ afterId: "item-001" })).toString("base64url")],
   ])("rejects a %s cursor with invalid_cursor", async (_, cursor) => {
-    await expectInvalidCursor(await testApp(), cursor);
+    await expectProblemError(() => numberList(25).page({ cursor }), "invalid_cursor");
   });
 
   it("rejects a real cursor that was altered with invalid_cursor", async () => {
-    const app = await testApp();
-    const first = PlaceholderItemPage.parse((await getPage(app, { limit: "5" })).json());
-    await expectInvalidCursor(app, first.nextCursor!.slice(0, -4));
+    const list = numberList(25);
+    const { nextCursor } = await list.page({ limit: 5 });
+    await expectProblemError(() => list.page({ cursor: nextCursor!.slice(0, -4) }), "invalid_cursor");
   });
 });

@@ -1,6 +1,7 @@
 import { Problem, type ProblemCode, problem, problemContentType } from "@prayerteam/domain";
 import type { LightMyRequestResponse } from "fastify";
 import { expect } from "vitest";
+import { ProblemError } from "../src/problems.ts";
 
 // The one assertion that a response is the problem for `code`: problem+json
 // that matches the shared contract exactly, with the code's default status
@@ -12,4 +13,16 @@ export function expectProblem(response: LightMyRequestResponse, code: ProblemCod
   const body = Problem.strict().parse(response.json());
   expect(body).toMatchObject({ status: expected, code });
   return body;
+}
+
+// The same, for a call that throws rather than answers.
+export async function expectProblemError(run: () => unknown, code: ProblemCode): Promise<void> {
+  let thrown: unknown;
+  try {
+    await run();
+  } catch (error) {
+    thrown = error;
+  }
+  expect(thrown).toBeInstanceOf(ProblemError);
+  expect((thrown as ProblemError).problem.code).toBe(code);
 }
