@@ -2,7 +2,6 @@ import { createTestDatabase } from "@prayerteam/db/testing";
 import type { LightMyRequestResponse } from "fastify";
 import { afterAll, afterEach } from "vitest";
 import { buildApp, type App, type AppConfig } from "../src/app.ts";
-import { createAccount } from "../src/auth/accounts.ts";
 import { noMinimumVersions } from "../src/version-check.ts";
 
 // Each test file gets its own copy of the migrated database (#14).
@@ -33,7 +32,7 @@ export async function testApp(config: Partial<AppConfig> = {}): Promise<App> {
 export async function testAccount(app: App, overrides: { email?: string; password?: string } = {}) {
   const email = overrides.email ?? `account-${crypto.randomUUID()}@example.org`;
   const password = overrides.password ?? "correct horse battery";
-  const account = await createAccount(app.auth, { email, password, displayName: "Ann Example" });
+  const account = await app.accounts.create({ email, password, displayName: "Ann Example" });
   return { ...account, password };
 }
 

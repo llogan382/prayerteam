@@ -2,8 +2,7 @@
 // Postgres). Run `pnpm db:migrate` first. Safe to run again. Later specs
 // extend it into the reviewer demo Church (#15).
 import { createDatabase, localDatabaseUrl } from "@prayerteam/db";
-import { AccountEmailTakenError, createAccount } from "./auth/accounts.ts";
-import { createAuth, offlineAuthConfig } from "./auth/auth.ts";
+import { AccountEmailTakenError, createAccounts, offlineAuthConfig } from "./auth/accounts.ts";
 
 export const demoAccount = {
   email: "demo@prayerteam.example",
@@ -13,10 +12,10 @@ export const demoAccount = {
 };
 
 const database = createDatabase({ connectionString: process.env.DATABASE_URL ?? localDatabaseUrl("prayerteam") });
-const auth = createAuth(database.db, offlineAuthConfig);
+const accounts = createAccounts(database.db, offlineAuthConfig);
 
 try {
-  await createAccount(auth, demoAccount);
+  await accounts.create(demoAccount);
   console.log(`Created ${demoAccount.email} (password: ${demoAccount.password})`);
 } catch (error) {
   if (!(error instanceof AccountEmailTakenError)) throw error;

@@ -8,8 +8,7 @@ import {
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import serverPackage from "../package.json" with { type: "json" };
-import { type Auth, type AuthConfig, createAuth } from "./auth/auth.ts";
-import { mountAuth, requireSession } from "./auth/routes.ts";
+import { type Accounts, type AuthConfig, createAccounts } from "./auth/accounts.ts";
 import { openApiComponents, transformRoute } from "./openapi.ts";
 import { placeholderRoutes } from "./placeholder.ts";
 import { handleProblems } from "./problems.ts";
@@ -32,8 +31,8 @@ export interface AppConfig {
 
 declare module "fastify" {
   interface FastifyInstance {
-    // Better Auth, for server-side Account operations such as createAccount.
-    auth: Auth;
+    // Server-side Account operations, such as creating an Account.
+    accounts: Accounts;
   }
 }
 
@@ -41,8 +40,8 @@ declare module "fastify" {
 // inject(); main.ts is the only caller that listens.
 export async function buildApp(config: AppConfig) {
   const app = Fastify({ logger: config.logger }).withTypeProvider<ZodTypeProvider>();
-  const auth = createAuth(config.database, config.auth);
-  app.decorate("auth", auth);
+  const accounts = createAccounts(config.database, config.auth);
+  app.decorate("accounts", accounts);
   // Requests are validated and responses serialized through their Zod
   // schemas from `domain`, so the app and the API share one contract.
   app.setValidatorCompiler(validatorCompiler);
@@ -63,8 +62,7 @@ export async function buildApp(config: AppConfig) {
   await app.register(
     async (api) => {
       api.addHook("onRequest", appVersionCheck(config.minimumVersions));
-      api.addHook("onRequest", requireSession(auth));
-      mountAuth(api, auth, config.auth.baseUrl);
+      accounts.mount(api);
 
       // Liveness only: no database, and no app version check
       // (unversionedRoutes in version-check.ts).

@@ -46,8 +46,8 @@ export function createAuth(db: Database, config: AuthConfig) {
     account: { modelName: "credential" },
     emailAndPassword: {
       enabled: true,
-      // No open sign-up: Accounts are created by createAccount(), which the
-      // joining flows and the seed call.
+      // No open sign-up: Accounts are created by Accounts.create()
+      // (accounts.ts), which the joining flows and the seed call.
       disableSignUp: true,
       minPasswordLength: 8,
       revokeSessionsOnPasswordReset: true,

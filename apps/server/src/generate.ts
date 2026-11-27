@@ -3,7 +3,7 @@
 import { createDatabase } from "@prayerteam/db";
 import { writeFile } from "node:fs/promises";
 import { buildApp } from "./app.ts";
-import { offlineAuthConfig } from "./auth/auth.ts";
+import { offlineAuthConfig } from "./auth/accounts.ts";
 import { formatOpenApiDocument, openApiDocument } from "./openapi.ts";
 import { noMinimumVersions } from "./version-check.ts";
 

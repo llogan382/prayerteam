@@ -107,7 +107,7 @@ describe("sign-out", () => {
   });
 });
 
-describe("createAccount", () => {
+describe("Create Account", () => {
   it("refuses an email that is already taken, whatever its case", async () => {
     const app = await testApp();
     await testAccount(app, { email: "taken@example.org" });

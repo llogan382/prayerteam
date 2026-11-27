@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { App } from "../src/app.ts";
-import { revokeAllSessions } from "../src/auth/accounts.ts";
-import { appOrigin } from "../src/auth/auth.ts";
+import { appOrigin } from "../src/auth/accounts.ts";
 import { me, origin, sessionCookie, signIn, testAccount, testApp } from "./app.ts";
 import { expectProblem } from "./problem.ts";
 
@@ -50,7 +49,7 @@ describe("revoke all sessions", () => {
     const app = await testApp({
       testRoutes: async (api) => {
         api.post<{ Params: { id: string } }>("/test/accounts/:id/revoke", { config: { public: true } }, async (request) => {
-          await revokeAllSessions(api.auth, request.params.id);
+          await api.accounts.revokeAllSessions(request.params.id);
           return {};
         });
       },
