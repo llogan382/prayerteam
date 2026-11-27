@@ -6,11 +6,12 @@
     "node": ">=24.12"
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "docker compose up --detach --wait && turbo run dev",
+    "db:migrate": "pnpm --filter @prayerteam/db db:migrate",
     "export:web": "turbo run export:web",
     "generate": "turbo run generate",
     "test:e2e": "turbo run test:e2e",
-    "ci": "turbo run typecheck test synth:check test:e2e",
+    "ci": "turbo run typecheck test db:check synth:check test:e2e",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck"
   },

@@ -40,6 +40,12 @@ catalog:
   openapi-fetch: 0.17.0
   openapi-react-query: 0.5.4
   "@tanstack/react-query": 5.108.4
+  # Database (packages/db, ADR 0004). Drizzle v1 is still a release
+  # candidate; pinned exactly until it ships (#9).
+  drizzle-orm: 1.0.0-rc.6
+  drizzle-kit: 1.0.0-rc.6
+  pg: 8.23.1
+  "@types/pg": 8.23.1
   # Infrastructure (infra workspace, ADR 0005)
   aws-cdk-lib: 2.278.0
   aws-cdk: 2.1149.0

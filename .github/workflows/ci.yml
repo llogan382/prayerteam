@@ -15,6 +15,24 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # Real Postgres 18 for the integration tests (#14, #32). Same image as
+    # compose.yaml; the tests make their own databases from a template.
+    services:
+      postgres:
+        image: postgres:18.7@sha256:64c8b0d31e4ab6ea665e8426ea406a94bf52de3c05b3a4a8bf713704eefa9328
+        env:
+          POSTGRES_USER: prayerteam
+          POSTGRES_PASSWORD: prayerteam
+          POSTGRES_DB: prayerteam
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prayerteam"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      DATABASE_ADMIN_URL: postgres://prayerteam:prayerteam@localhost:5432/postgres
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -37,7 +55,7 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @prayerteam/mobile exec playwright install --with-deps chromium webkit
 
-      - name: Type check, unit and CDK assertion tests, cdk synth, web build and end-to-end tests
+      - name: Type check, tests against Postgres, drizzle-kit check, cdk synth, web build and end-to-end tests
         run: pnpm run ci
 
       # `ci` regenerates openapi.json and the client types (typecheck depends

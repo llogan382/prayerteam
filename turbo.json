@@ -63,6 +63,9 @@
     "test": {
       "dependsOn": [
         "topo"
+      ],
+      "passThroughEnv": [
+        "DATABASE_ADMIN_URL"
       ]
     },
     "synth:check": {
@@ -71,6 +74,11 @@
       ],
       "outputs": [
         "cdk.out/**"
+      ]
+    },
+    "db:check": {
+      "dependsOn": [
+        "topo"
       ]
     }
   }
