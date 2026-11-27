@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "node --watch src/main.ts",
     "start": "node src/main.ts",
+    "generate": "node src/generate.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fastify/swagger": "catalog:",
     "@prayerteam/domain": "workspace:*",
     "fastify": "catalog:",
     "fastify-type-provider-zod": "catalog:",
@@ -17,6 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "openapi-types": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

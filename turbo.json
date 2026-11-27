@@ -30,9 +30,22 @@
         "CI"
       ]
     },
-    "typecheck": {
+    "generate": {
       "dependsOn": [
         "topo"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!openapi.json"
+      ],
+      "outputs": [
+        "openapi.json"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": [
+        "topo",
+        "generate"
       ]
     },
     "test": {

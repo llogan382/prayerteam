@@ -33,6 +33,8 @@ catalog:
   # API server (apps/server, ADR 0002)
   fastify: 5.12.8
   fastify-type-provider-zod: 7.0.0
+  "@fastify/swagger": 9.9.5
+  openapi-types: 12.1.3
   # Infrastructure (infra workspace, ADR 0005)
   aws-cdk-lib: 2.278.0
   aws-cdk: 2.1149.0

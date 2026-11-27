@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "export:web": "turbo run export:web",
+    "generate": "turbo run generate",
     "test:e2e": "turbo run test:e2e",
     "ci": "turbo run typecheck test synth:check test:e2e",
     "test": "turbo run test",
