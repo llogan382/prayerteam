@@ -3,6 +3,8 @@ import { QueryClient } from "@tanstack/react-query";
 import Constants from "expo-constants";
 import { fetch as expoFetch } from "expo/fetch";
 import { Platform } from "react-native";
+import { markUpgradeRequired } from "./upgrade";
+import { appVersion } from "./version";
 
 // Where the API is. On the web it is same-origin /api, behind CloudFront in
 // production (ADR 0005) and the test server's proxy in e2e. Native apps use
@@ -22,6 +24,8 @@ export const api = createApiClient({
   // expo/fetch takes the Request objects openapi-fetch passes; its own
   // types just don't name the DOM ones.
   fetch: expoFetch as unknown as typeof globalThis.fetch,
+  app: { version: appVersion(), platform: Platform.OS === "ios" || Platform.OS === "android" ? Platform.OS : "web" },
+  onUpgradeRequired: markUpgradeRequired,
 });
 
 // In-memory cache only: persistence waits for the offline decision (#31).

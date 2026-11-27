@@ -2,7 +2,6 @@ import { type Problem, type ProblemCode, problemContentType } from "@prayerteam/
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod";
 import { STATUS_CODES } from "node:http";
-import { InvalidCursorError } from "./cursor.ts";
 
 // Sends a problem+json response. `type` is about:blank, so `title` is the
 // HTTP status phrase and `code` carries the meaning (RFC 9457 §4.2.1).
@@ -22,6 +21,22 @@ function sendProblem(
   return reply.code(status).type(problemContentType).send(problem);
 }
 
+// Thrown anywhere in a request to answer with that problem. `detail` must
+// be safe for the client to read.
+export class ProblemError extends Error {
+  override name = "ProblemError";
+  readonly status: number;
+  readonly code: ProblemCode;
+  readonly detail: string | undefined;
+
+  constructor(status: number, code: ProblemCode, detail?: string) {
+    super(detail ?? code);
+    this.status = status;
+    this.code = code;
+    this.detail = detail;
+  }
+}
+
 // Turns every failure on the app into a problem.
 export function handleProblems(app: FastifyInstance): void {
   app.setNotFoundHandler((_request, reply) => sendProblem(reply, 404, "not_found"));
@@ -36,9 +51,8 @@ export function handleProblems(app: FastifyInstance): void {
         })),
       });
     }
-    // A list cursor that wasn't one we issued, or was altered.
-    if (error instanceof InvalidCursorError) {
-      return sendProblem(reply, 400, "invalid_cursor");
+    if (error instanceof ProblemError) {
+      return sendProblem(reply, error.status, error.code, error.detail ? { detail: error.detail } : {});
     }
     // Fastify's own client errors (malformed JSON, unsupported content
     // type, body too large) keep their 4xx status. Their messages describe

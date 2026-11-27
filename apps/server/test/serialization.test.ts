@@ -8,12 +8,16 @@ describe("responses", () => {
       testRoutes: async (api) => {
         api.get("/test/leaky", { schema: { response: { 200: MetaResponse } } }, async () => ({
           name: "Prayer Team",
+          minimumVersions: { ios: "1.0.0", android: "1.0.0" },
           passwordHash: "must not leak",
         }));
       },
     });
     const response = await app.inject({ method: "GET", url: "/api/test/leaky" });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ name: "Prayer Team" });
+    expect(response.json()).toEqual({
+      name: "Prayer Team",
+      minimumVersions: { ios: "1.0.0", android: "1.0.0" },
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { problemCodes, problemContentType } from "@prayerteam/domain";
+import { appPlatformHeader, appPlatforms, appVersionHeader, problemCodes, problemContentType } from "@prayerteam/domain";
 import { describe, expect, it } from "vitest";
 import { openApiDocument } from "../src/openapi.ts";
 import { testApp } from "./app.ts";
@@ -16,7 +16,11 @@ describe("OpenAPI document", () => {
     expect(meta).toMatchObject({
       content: {
         "application/json": {
-          schema: { type: "object", properties: { name: { type: "string" } }, required: ["name"] },
+          schema: {
+            type: "object",
+            properties: { name: { type: "string" } },
+            required: expect.arrayContaining(["name"]),
+          },
         },
       },
     });
@@ -40,5 +44,22 @@ describe("OpenAPI document", () => {
       properties: { code: { enum: [...problemCodes] } },
       required: expect.arrayContaining(["type", "title", "status", "code"]),
     });
+  });
+
+  it("declares the app version headers once, on every operation except health", async () => {
+    const document = openApiDocument(await testApp());
+    expect(document.components?.parameters).toMatchObject({
+      AppVersion: { in: "header", name: appVersionHeader, required: false, schema: { type: "string" } },
+      AppPlatform: { in: "header", name: appPlatformHeader, required: false, schema: { enum: [...appPlatforms] } },
+    });
+    const refs = [
+      { $ref: "#/components/parameters/AppVersion" },
+      { $ref: "#/components/parameters/AppPlatform" },
+    ];
+    for (const [path, item] of Object.entries(document.paths ?? {})) {
+      const parameters = item?.get?.parameters ?? [];
+      if (path === "/api/health") expect(parameters, path).not.toEqual(expect.arrayContaining([refs[0]]));
+      else expect(parameters, path).toEqual(expect.arrayContaining(refs));
+    }
   });
 });

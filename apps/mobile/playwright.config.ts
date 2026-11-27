@@ -18,9 +18,17 @@ export default defineConfig({
   ],
   webServer: [
     // The real API, started from source like production (no build step).
+    // Both native minimums are far above any app version, which the web
+    // must ignore (e2e/app-version.spec.ts).
     {
       command: "node ../server/src/main.ts",
-      env: { PORT: String(apiPort), HOST: "127.0.0.1", LOG_LEVEL: "warn" },
+      env: {
+        PORT: String(apiPort),
+        HOST: "127.0.0.1",
+        LOG_LEVEL: "warn",
+        MIN_VERSION_IOS: "99.0.0",
+        MIN_VERSION_ANDROID: "99.0.0",
+      },
       url: `http://127.0.0.1:${apiPort}/api/health`,
       reuseExistingServer: !process.env.CI,
     },

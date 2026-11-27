@@ -10,11 +10,14 @@ import serverPackage from "../package.json" with { type: "json" };
 import { openApiComponents, transformRoute } from "./openapi.ts";
 import { placeholderRoutes } from "./placeholder.ts";
 import { handleProblems } from "./problems.ts";
+import { appVersionCheck, type MinimumVersionsProvider } from "./version-check.ts";
 
 // Everything the app needs from outside, passed in so tests can build an
 // instance with their own config. Only main.ts reads the environment.
 export interface AppConfig {
   logger: FastifyServerOptions["logger"];
+  // The iOS and Android minimum app versions, read on every checked request.
+  minimumVersions: MinimumVersionsProvider;
   // Extra routes under /api for tests only, such as a handler that throws
   // or returns undeclared fields. Production never sets it.
   testRoutes?: FastifyPluginAsync;
@@ -43,8 +46,10 @@ export async function buildApp(config: AppConfig) {
 
   await app.register(
     async (api) => {
-      // Liveness only: no database, and exempt from the app version check
-      // that #42 adds (#31).
+      api.addHook("onRequest", appVersionCheck(config.minimumVersions));
+
+      // Liveness only: no database, and no app version check
+      // (unversionedRoutes in version-check.ts).
       api.get(
         "/health",
         { schema: { response: { 200: HealthResponse } } },
@@ -54,7 +59,7 @@ export async function buildApp(config: AppConfig) {
       api.get(
         "/meta",
         { schema: { response: { 200: MetaResponse } } },
-        async () => ({ name: productName }),
+        async () => ({ name: productName, minimumVersions: await config.minimumVersions() }),
       );
 
       await api.register(placeholderRoutes);

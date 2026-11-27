@@ -1,4 +1,11 @@
-import { Problem, type ProblemCode, problemContentType } from "@prayerteam/domain";
+import {
+  type AppPlatform,
+  appPlatformHeader,
+  appVersionHeader,
+  Problem,
+  type ProblemCode,
+  problemContentType,
+} from "@prayerteam/domain";
 import createFetchClient, { type Middleware } from "openapi-fetch";
 import createQueryHooks from "openapi-react-query";
 import type { paths } from "./schema.ts";
@@ -9,6 +16,39 @@ export interface ApiClientOptions {
   baseUrl: string;
   // The fetch to use; the app passes expo/fetch.
   fetch: typeof globalThis.fetch;
+  // Sent on every request, so the API can tell an outdated native app to
+  // update (ADR 0002).
+  app: { version: string; platform: AppPlatform };
+  // Called on any 426 upgrade_required.
+  onUpgradeRequired: () => void;
+}
+
+// The response's Problem, or undefined if its body isn't one.
+async function problemIn(response: Response): Promise<Problem | undefined> {
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined);
+  const problem = Problem.safeParse(body);
+  return problem.success ? problem.data : undefined;
+}
+
+// The one place the version and platform headers are set, and where a
+// 426 upgrade_required is noticed, whichever call got it.
+function appVersionCheck({ app, onUpgradeRequired }: ApiClientOptions): Middleware {
+  return {
+    onRequest({ request }) {
+      request.headers.set(appVersionHeader, app.version);
+      request.headers.set(appPlatformHeader, app.platform);
+      return request;
+    },
+    async onResponse({ response }) {
+      if (response.status === 426 && (await problemIn(response))?.code === "upgrade_required") {
+        onUpgradeRequired();
+      }
+      return undefined;
+    },
+  };
 }
 
 function problemResponse(status: number, code: ProblemCode, title: string, detail?: string): Response {
@@ -27,12 +67,7 @@ function problemResponse(status: number, code: ProblemCode, title: string, detai
 // - a request that gets no response at all becomes a 503 internal_error
 const errorsAsProblems: Middleware = {
   async onResponse({ response }) {
-    if (response.ok) return undefined;
-    const body: unknown = await response
-      .clone()
-      .json()
-      .catch(() => undefined);
-    if (Problem.safeParse(body).success) return undefined;
+    if (response.ok || (await problemIn(response))) return undefined;
     const status = response.status >= 400 && response.status <= 599 ? response.status : 502;
     return problemResponse(status, status === 404 ? "not_found" : "internal_error", response.statusText || "Error");
   },
@@ -44,9 +79,9 @@ const errorsAsProblems: Middleware = {
 // The typed client and its TanStack Query hooks. A call with a wrong path,
 // parameter or body fails the type check, because the types are generated
 // from the server's committed openapi.json.
-export function createApiClient({ baseUrl, fetch }: ApiClientOptions) {
-  const client = createFetchClient<paths>({ baseUrl, fetch });
-  client.use(errorsAsProblems);
+export function createApiClient(options: ApiClientOptions) {
+  const client = createFetchClient<paths>({ baseUrl: options.baseUrl, fetch: options.fetch });
+  client.use(appVersionCheck(options), errorsAsProblems);
   return { client, query: createQueryHooks(client) };
 }
 

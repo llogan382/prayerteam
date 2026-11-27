@@ -62,6 +62,32 @@
         ],
         "additionalProperties": false
       }
+    },
+    "parameters": {
+      "AppVersion": {
+        "in": "header",
+        "name": "x-app-version",
+        "required": false,
+        "description": "The app's version, MAJOR.MINOR.PATCH. Below the platform's minimum: 426 upgrade_required.",
+        "schema": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+        }
+      },
+      "AppPlatform": {
+        "in": "header",
+        "name": "x-app-platform",
+        "required": false,
+        "description": "Required with the version header. web is never blocked.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "ios",
+            "android",
+            "web"
+          ]
+        }
+      }
     }
   },
   "paths": {
@@ -116,10 +142,29 @@
                     "name": {
                       "type": "string",
                       "minLength": 1
+                    },
+                    "minimumVersions": {
+                      "type": "object",
+                      "properties": {
+                        "ios": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+                        },
+                        "android": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+                        }
+                      },
+                      "required": [
+                        "ios",
+                        "android"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
-                    "name"
+                    "name",
+                    "minimumVersions"
                   ],
                   "additionalProperties": false
                 }
@@ -136,7 +181,15 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "$ref": "#/components/parameters/AppPlatform"
+          }
+        ]
       }
     },
     "/api/placeholder-items": {
@@ -162,6 +215,12 @@
             "name": "limit",
             "required": false,
             "description": "Page size, 1 to 100 (default 20). A larger value is rejected with validation_failed, not clamped."
+          },
+          {
+            "$ref": "#/components/parameters/AppVersion"
+          },
+          {
+            "$ref": "#/components/parameters/AppPlatform"
           }
         ],
         "responses": {

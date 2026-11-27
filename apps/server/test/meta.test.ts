@@ -7,7 +7,7 @@ describe("GET /api/meta", () => {
     const response = await app.inject({ method: "GET", url: "/api/meta" });
     expect(response.statusCode).toBe(200);
     expect(response.headers["content-type"]).toMatch(/^application\/json/);
-    expect(response.json()).toEqual({ name: "Prayer Team" });
+    expect(response.json()).toMatchObject({ name: "Prayer Team" });
   });
 });
 

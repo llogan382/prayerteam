@@ -1,9 +1,14 @@
 import type { z } from "zod";
+import { ProblemError } from "./problems.ts";
 
-// Thrown for any cursor that doesn't decode to a valid keyset position. The
-// error handler turns it into 400 invalid_cursor.
-export class InvalidCursorError extends Error {
+// Thrown for any cursor that doesn't decode to a valid keyset position: a
+// cursor we didn't issue, or one that was altered.
+export class InvalidCursorError extends ProblemError {
   override name = "InvalidCursorError";
+
+  constructor() {
+    super(400, "invalid_cursor", "Pass back a nextCursor exactly as this API returned it.");
+  }
 }
 
 // The one cursor codec every list endpoint uses: the keyset position as
@@ -18,10 +23,10 @@ export function cursorCodec<Position extends z.ZodType>(position: Position) {
       try {
         json = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
       } catch {
-        throw new InvalidCursorError("cursor is not base64url JSON");
+        throw new InvalidCursorError();
       }
       const parsed = position.safeParse(json);
-      if (!parsed.success) throw new InvalidCursorError("cursor is not a valid position");
+      if (!parsed.success) throw new InvalidCursorError();
       return parsed.data;
     },
   };

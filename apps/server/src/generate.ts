@@ -3,7 +3,9 @@
 import { writeFile } from "node:fs/promises";
 import { buildApp } from "./app.ts";
 import { formatOpenApiDocument, openApiDocument } from "./openapi.ts";
+import { noMinimumVersions } from "./version-check.ts";
 
-const app = await buildApp({ logger: false });
+// The minimums don't appear in the document; any values do.
+const app = await buildApp({ logger: false, minimumVersions: noMinimumVersions });
 await writeFile(new URL("../openapi.json", import.meta.url), formatOpenApiDocument(openApiDocument(app)));
 await app.close();

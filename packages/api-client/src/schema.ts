@@ -61,7 +61,12 @@ export interface paths {
         get: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /** @description The app's version, MAJOR.MINOR.PATCH. Below the platform's minimum: 426 upgrade_required. */
+                    "x-app-version"?: components["parameters"]["AppVersion"];
+                    /** @description Required with the version header. web is never blocked. */
+                    "x-app-platform"?: components["parameters"]["AppPlatform"];
+                };
                 path?: never;
                 cookie?: never;
             };
@@ -75,6 +80,10 @@ export interface paths {
                     content: {
                         "application/json": {
                             name: string;
+                            minimumVersions: {
+                                ios: string;
+                                android: string;
+                            };
                         };
                     };
                 };
@@ -112,7 +121,12 @@ export interface paths {
                     /** @description Page size, 1 to 100 (default 20). A larger value is rejected with validation_failed, not clamped. */
                     limit?: number;
                 };
-                header?: never;
+                header?: {
+                    /** @description The app's version, MAJOR.MINOR.PATCH. Below the platform's minimum: 426 upgrade_required. */
+                    "x-app-version"?: components["parameters"]["AppVersion"];
+                    /** @description Required with the version header. web is never blocked. */
+                    "x-app-platform"?: components["parameters"]["AppPlatform"];
+                };
                 path?: never;
                 cookie?: never;
             };
@@ -170,7 +184,12 @@ export interface components {
         };
     };
     responses: never;
-    parameters: never;
+    parameters: {
+        /** @description The app's version, MAJOR.MINOR.PATCH. Below the platform's minimum: 426 upgrade_required. */
+        AppVersion: string;
+        /** @description Required with the version header. web is never blocked. */
+        AppPlatform: "ios" | "android" | "web";
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
