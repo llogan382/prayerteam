@@ -40,10 +40,11 @@ jobs:
       - name: Type check, unit and CDK assertion tests, cdk synth, web build and end-to-end tests
         run: pnpm run ci
 
-      # `ci` regenerates openapi.json (typecheck depends on generate); the
-      # committed contract must match what the routes declare (ADR 0002).
-      - name: OpenAPI contract is up to date
-        run: git diff --exit-code -- apps/server/openapi.json
+      # `ci` regenerates openapi.json and the client types (typecheck depends
+      # on generate); the committed files must match what the routes declare
+      # (ADR 0002).
+      - name: OpenAPI contract and client types are up to date
+        run: git diff --exit-code -- apps/server/openapi.json packages/api-client/src/schema.ts
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()

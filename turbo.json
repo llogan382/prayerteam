@@ -42,6 +42,18 @@
         "openapi.json"
       ]
     },
+    "@prayerteam/api-client#generate": {
+      "dependsOn": [
+        "@prayerteam/server#generate"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!src/schema.ts"
+      ],
+      "outputs": [
+        "src/schema.ts"
+      ]
+    },
     "typecheck": {
       "dependsOn": [
         "topo",

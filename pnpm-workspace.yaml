@@ -35,8 +35,25 @@ catalog:
   fastify-type-provider-zod: 7.0.0
   "@fastify/swagger": 9.9.5
   openapi-types: 12.1.3
+  # Typed API client (packages/api-client, ADR 0002)
+  openapi-typescript: 7.13.0
+  openapi-fetch: 0.17.0
+  openapi-react-query: 0.5.4
+  "@tanstack/react-query": 5.108.4
   # Infrastructure (infra workspace, ADR 0005)
   aws-cdk-lib: 2.278.0
   aws-cdk: 2.1149.0
   constructs: 10.8.1
   vitest: 5.1.2
+
+# openapi-typescript needs the TypeScript JS API, which TS 7 doesn't ship
+# (research doc §8.4). Only packages/api-client uses this catalog, so the
+# rest of the repo stays on TS 7.
+catalogs:
+  ts6:
+    typescript: npm:@typescript/typescript6@6.0.2
+
+# openapi-typescript 7.13 declares typescript ^5 but generates correctly on 6.
+peerDependencyRules:
+  allowedVersions:
+    openapi-typescript>typescript: "6"

@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "catalog:",
+    "@prayerteam/api-client": "workspace:*",
     "@prayerteam/domain": "workspace:*",
+    "@tanstack/react-query": "catalog:",
     "expo": "catalog:",
     "expo-constants": "catalog:",
     "expo-linking": "catalog:",
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@playwright/test": "catalog:",
+    "@prayerteam/server": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "typescript": "catalog:"

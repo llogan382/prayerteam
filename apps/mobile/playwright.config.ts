@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = 4173;
+const apiPort = 4174;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -15,10 +16,20 @@ export default defineConfig({
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     { name: "webkit", use: { ...devices["Desktop Safari"] } },
   ],
-  // Serves the static export the way CloudFront will: every path falls back to index.html.
-  webServer: {
-    command: `node e2e/serve.mts dist ${port}`,
-    url: `http://localhost:${port}`,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    // The real API, started from source like production (no build step).
+    {
+      command: "node ../server/src/main.ts",
+      env: { PORT: String(apiPort), HOST: "127.0.0.1", LOG_LEVEL: "warn" },
+      url: `http://127.0.0.1:${apiPort}/api/health`,
+      reuseExistingServer: !process.env.CI,
+    },
+    // Serves the static export the way CloudFront will: every path falls
+    // back to index.html, and /api/* goes to the API (ADR 0005).
+    {
+      command: `node e2e/serve.mts dist ${port} http://127.0.0.1:${apiPort}`,
+      url: `http://localhost:${port}`,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });
