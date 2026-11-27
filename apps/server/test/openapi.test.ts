@@ -1,3 +1,4 @@
+import { problemCodes, problemContentType } from "@prayerteam/domain";
 import { describe, expect, it } from "vitest";
 import { openApiDocument } from "../src/openapi.ts";
 import { testApp } from "./app.ts";
@@ -18,6 +19,26 @@ describe("OpenAPI document", () => {
           schema: { type: "object", properties: { name: { type: "string" } }, required: ["name"] },
         },
       },
+    });
+  });
+
+  it("declares problem+json, one shared schema, as every operation's error response", async () => {
+    const document = openApiDocument(await testApp());
+    const methods = ["get", "put", "post", "delete", "patch"] as const;
+    const operations = Object.entries(document.paths ?? {}).flatMap(([path, item]) =>
+      methods.flatMap((method) => (item?.[method] ? [[`${method} ${path}`, item[method]] as const] : [])),
+    );
+    expect(operations.length).toBeGreaterThan(0);
+    for (const [name, operation] of operations) {
+      expect(operation.responses?.default, name).toEqual({
+        description: expect.any(String),
+        content: { [problemContentType]: { schema: { $ref: "#/components/schemas/Problem" } } },
+      });
+    }
+    expect(document.components?.schemas?.Problem).toMatchObject({
+      type: "object",
+      properties: { code: { enum: [...problemCodes] } },
+      required: expect.arrayContaining(["type", "title", "status", "code"]),
     });
   });
 });

@@ -2,12 +2,13 @@ import { HealthResponse, MetaResponse, productName } from "@prayerteam/domain";
 import swagger from "@fastify/swagger";
 import Fastify, { type FastifyPluginAsync, type FastifyServerOptions } from "fastify";
 import {
-  jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import serverPackage from "../package.json" with { type: "json" };
+import { openApiComponents, transformRoute } from "./openapi.ts";
+import { handleProblems } from "./problems.ts";
 
 // Everything the app needs from outside, passed in so tests can build an
 // instance with their own config. Only main.ts reads the environment.
@@ -26,14 +27,17 @@ export async function buildApp(config: AppConfig) {
   // schemas from `domain`, so the app and the API share one contract.
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+  handleProblems(app);
   // Collects every route registered after it into the OpenAPI document
-  // (src/openapi.ts), converting the Zod schemas to JSON Schema.
+  // (src/openapi.ts), converting the Zod schemas to JSON Schema and adding
+  // the problem+json error response.
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
       info: { title: `${productName} API`, version: serverPackage.version },
+      components: openApiComponents,
     },
-    transform: jsonSchemaTransform,
+    transform: transformRoute,
   });
 
   await app.register(
