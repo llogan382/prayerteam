@@ -17,6 +17,9 @@ blob-report/
 *.log
 .env*.local
 
+# fallow analysis cache
+.fallow/
+
 # AWS CDK
 cdk.out/
 

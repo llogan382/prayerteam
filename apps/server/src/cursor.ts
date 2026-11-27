@@ -3,7 +3,7 @@ import { ProblemError } from "./problems.ts";
 
 // Thrown for any cursor that doesn't decode to a valid keyset position: a
 // cursor we didn't issue, or one that was altered.
-export class InvalidCursorError extends ProblemError {
+class InvalidCursorError extends ProblemError {
   override name = "InvalidCursorError";
 
   constructor() {

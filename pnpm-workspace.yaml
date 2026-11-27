@@ -13,6 +13,8 @@ allowBuilds: {}
 
 catalog:
   turbo: 2.11.13
+  # Dead code, duplication, health and import boundaries (docs/research/fallow-ruleset.md)
+  fallow: 3.50.0
   typescript: ^7.0.2
   "@playwright/test": 1.65.1
   "@types/node": ^24.0.0
@@ -22,6 +24,7 @@ catalog:
   expo-router: ~58.0.32
   expo-constants: ~58.0.16
   expo-linking: ~58.0.17
+  expo-system-ui: ~58.0.7
   "@expo/metro-runtime": ~58.0.17
   react: 19.3.0
   react-dom: 19.3.0
@@ -68,3 +71,14 @@ catalogs:
 peerDependencyRules:
   allowedVersions:
     openapi-typescript>typescript: "6"
+
+minimumReleaseAgeExclude:
+  - "@fallow-cli/darwin-arm64@3.50.0"
+  - "@fallow-cli/darwin-x64@3.50.0"
+  - "@fallow-cli/linux-arm64-gnu@3.50.0"
+  - "@fallow-cli/linux-arm64-musl@3.50.0"
+  - "@fallow-cli/linux-x64-gnu@3.50.0"
+  - "@fallow-cli/linux-x64-musl@3.50.0"
+  - "@fallow-cli/win32-arm64-msvc@3.50.0"
+  - "@fallow-cli/win32-x64-msvc@3.50.0"
+  - fallow@3.50.0

@@ -12,11 +12,13 @@
     "export:web": "turbo run export:web",
     "generate": "turbo run generate",
     "test:e2e": "turbo run test:e2e",
-    "ci": "turbo run typecheck test db:check synth:check test:e2e",
+    "fallow": "fallow --quiet",
+    "ci": "fallow --quiet && turbo run typecheck test db:check synth:check test:e2e",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
+    "fallow": "catalog:",
     "turbo": "catalog:"
   }
 }

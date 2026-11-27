@@ -3,7 +3,7 @@ import { z } from "zod";
 // Every list endpoint takes `?cursor=&limit=` and answers with one page.
 // Cursors are opaque: clients only pass back a `nextCursor` they were given,
 // so the server can change the keyset behind them without breaking apps.
-export const pageLimit = { default: 20, max: 100 } as const;
+const pageLimit = { default: 20, max: 100 } as const;
 
 export const ListQuery = z.object({
   // Any string: one the server didn't issue, empty included, is 400

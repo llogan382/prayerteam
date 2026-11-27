@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { createDatabase } from "./database.ts";
 
 // The committed SQL migrations (`pnpm --filter @prayerteam/db db:generate`).
-export const migrationsFolder = fileURLToPath(new URL("../migrations", import.meta.url));
+const migrationsFolder = fileURLToPath(new URL("../migrations", import.meta.url));
 
 // Applies every pending migration. A separate step, never at app start
 // (#9, #15): `db:migrate` locally, the image's `migrate` command in

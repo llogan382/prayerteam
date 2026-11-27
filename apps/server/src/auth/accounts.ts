@@ -20,7 +20,7 @@ export class AccountEmailTakenError extends Error {
   }
 }
 
-export class InvalidPasswordLengthError extends Error {
+class InvalidPasswordLengthError extends Error {
   override name = "InvalidPasswordLengthError";
 
   constructor(min: number, max: number) {

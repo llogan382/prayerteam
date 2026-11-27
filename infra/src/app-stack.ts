@@ -31,7 +31,7 @@ import { instanceUserData } from "./user-data.ts";
 // deploy/caddy/Caddyfile checks it by name; a test keeps the two in step.
 export const ORIGIN_SECRET_HEADER = "X-Origin-Secret";
 // Where the deploy document writes the server's environment on the instance.
-export const SERVER_ENV_FILE = "/opt/prayerteam/server.env";
+const SERVER_ENV_FILE = "/opt/prayerteam/server.env";
 const DEPLOY_ROLE_NAME = "prayerteam-github-deploy";
 const PATCH_GROUP = "prayerteam-prod";
 const READ_PARAMETERS = ["ssm:GetParameter", "ssm:GetParameters"];
