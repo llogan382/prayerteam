@@ -2,7 +2,8 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { AccountEmailTakenError } from "../src/auth/accounts.ts";
-import { expectUnauthenticated, me, origin, signIn, testAccount, testApp, testAuthConfig } from "./app.ts";
+import { me, origin, signIn, testAccount, testApp, testAuthConfig } from "./app.ts";
+import { expectProblem } from "./problem.ts";
 
 describe("sign-in", () => {
   it("with the right password starts a session that GET /api/me accepts", async () => {
@@ -63,8 +64,8 @@ describe("open sign-up", () => {
 describe("protected routes", () => {
   it("refuse a request with no session, or a garbage one, with 401 unauthenticated", async () => {
     const app = await testApp();
-    await expectUnauthenticated(await me(app));
-    await expectUnauthenticated(await me(app, "better-auth.session_token=garbage"));
+    expectProblem(await me(app), "unauthenticated");
+    expectProblem(await me(app, "better-auth.session_token=garbage"), "unauthenticated");
   });
 
   it("check the session before the input, so a signed-out request gets 401, not 400", async () => {
@@ -78,7 +79,7 @@ describe("protected routes", () => {
       },
     });
     const response = await app.inject({ method: "POST", url: "/api/test/protected", payload: { text: "" } });
-    await expectUnauthenticated(response);
+    expectProblem(response, "unauthenticated");
   });
 
   it("leave the public routes open", async () => {
@@ -101,7 +102,7 @@ describe("sign-out", () => {
       headers: { origin, cookie: phone.cookie! },
     });
     expect(response.statusCode).toBe(200);
-    await expectUnauthenticated(await me(app, phone.cookie));
+    expectProblem(await me(app, phone.cookie), "unauthenticated");
     expect((await me(app, laptop.cookie)).statusCode).toBe(200);
   });
 });

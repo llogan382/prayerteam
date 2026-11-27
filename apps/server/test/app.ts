@@ -1,7 +1,6 @@
 import { createTestDatabase } from "@prayerteam/db/testing";
-import { Problem } from "@prayerteam/domain";
 import type { LightMyRequestResponse } from "fastify";
-import { afterAll, afterEach, expect } from "vitest";
+import { afterAll, afterEach } from "vitest";
 import { buildApp, type App, type AppConfig } from "../src/app.ts";
 import { createAccount } from "../src/auth/accounts.ts";
 import { noMinimumVersions } from "../src/version-check.ts";
@@ -55,12 +54,6 @@ export async function signIn(app: App, email: string, password: string, headers:
 // GET /api/me with an optional session cookie and extra headers.
 export function me(app: App, cookie?: string, headers: Record<string, string> = {}) {
   return app.inject({ method: "GET", url: "/api/me", headers: { ...headers, ...(cookie ? { cookie } : {}) } });
-}
-
-export function expectUnauthenticated(response: LightMyRequestResponse) {
-  expect(response.statusCode).toBe(401);
-  expect(response.headers["content-type"]).toMatch(/^application\/problem\+json/);
-  expect(Problem.parse(response.json())).toMatchObject({ status: 401, code: "unauthenticated" });
 }
 
 export const testAuthConfig = (baseUrl: string) => ({

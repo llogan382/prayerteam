@@ -1,17 +1,10 @@
-import { Problem, problemContentType } from "@prayerteam/domain";
 import { Writable } from "node:stream";
-import type { FastifyPluginAsync, LightMyRequestResponse } from "fastify";
+import type { FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { testApp } from "./app.ts";
-
-// The response's problem, after checking it is problem+json that matches
-// the shared contract exactly.
-function problemOf(response: LightMyRequestResponse): Problem {
-  expect(response.headers["content-type"]).toMatch(new RegExp(`^${problemContentType.replace("+", "\\+")}`));
-  return Problem.strict().parse(response.json());
-}
+import { expectProblem } from "./problem.ts";
 
 // The app's log lines, parsed, for checking what reached the server log.
 function captureLogs() {
@@ -29,8 +22,7 @@ describe("errors", () => {
   it("an unknown /api route is a 404 problem with code not_found", async () => {
     const app = await testApp();
     const response = await app.inject({ method: "GET", url: "/api/no-such-route" });
-    expect(response.statusCode).toBe(404);
-    expect(problemOf(response)).toMatchObject({ status: 404, code: "not_found", title: "Not Found" });
+    expect(expectProblem(response, "not_found")).toMatchObject({ title: "Not Found" });
   });
 
   it("a crash is a 500 problem with code internal_error, logged but not leaked", async () => {
@@ -44,8 +36,7 @@ describe("errors", () => {
       },
     });
     const response = await app.inject({ method: "GET", url: "/api/test/crash" });
-    expect(response.statusCode).toBe(500);
-    expect(problemOf(response)).toEqual({
+    expect(expectProblem(response, "internal_error")).toEqual({
       type: "about:blank",
       title: "Internal Server Error",
       status: 500,
@@ -83,9 +74,8 @@ describe("errors", () => {
     async (_, url, payload, paths) => {
       const app = await testApp({ testRoutes: validated });
       const response = await app.inject({ method: "POST", url, payload });
-      expect(response.statusCode).toBe(400);
-      const problem = problemOf(response);
-      expect(problem).toMatchObject({ status: 400, code: "validation_failed", title: "Bad Request" });
+      const problem = expectProblem(response, "validation_failed");
+      expect(problem.title).toBe("Bad Request");
       expect(problem.errors?.map((error) => error.path)).toEqual(paths);
     },
   );
@@ -98,7 +88,15 @@ describe("errors", () => {
       headers: { "content-type": "application/json" },
       payload: "{not json",
     });
-    expect(response.statusCode).toBe(400);
-    expect(problemOf(response)).toMatchObject({ status: 400, code: "validation_failed" });
+    expectProblem(response, "validation_failed");
+  });
+
+  it.each([
+    ["too large", 413, { "content-type": "application/json" }, JSON.stringify({ items: [{ name: "x".repeat(2_000_000) }] })],
+    ["of an unsupported content type", 415, { "content-type": "text/csv" }, "name\nok"],
+  ])("a body %s keeps its status as a validation_failed problem", async (_, status, headers, payload) => {
+    const app = await testApp({ testRoutes: validated });
+    const response = await app.inject({ method: "POST", url: "/api/test/validated", headers, payload });
+    expect(expectProblem(response, "validation_failed", status).detail).toBeTruthy();
   });
 });

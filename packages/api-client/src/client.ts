@@ -2,8 +2,9 @@ import {
   type AppPlatform,
   appPlatformHeader,
   appVersionHeader,
+  isProblemStatus,
   Problem,
-  type ProblemCode,
+  problem,
   problemContentType,
 } from "@prayerteam/domain";
 import createFetchClient, { type Middleware } from "openapi-fetch";
@@ -43,7 +44,7 @@ function appVersionCheck({ app, onUpgradeRequired }: ApiClientOptions): Middlewa
       return request;
     },
     async onResponse({ response }) {
-      if (response.status === 426 && (await problemIn(response))?.code === "upgrade_required") {
+      if ((await problemIn(response))?.code === "upgrade_required") {
         onUpgradeRequired();
       }
       return undefined;
@@ -51,10 +52,10 @@ function appVersionCheck({ app, onUpgradeRequired }: ApiClientOptions): Middlewa
   };
 }
 
-function problemResponse(status: number, code: ProblemCode, title: string, detail?: string): Response {
-  const problem: Problem = { type: "about:blank", title, status, code, ...(detail ? { detail } : {}) };
-  return new Response(JSON.stringify(problem), {
-    status,
+// Puts a Problem in a Response: the client's adapter for problem+json.
+function problemResponse(body: Problem): Response {
+  return new Response(JSON.stringify(body), {
+    status: body.status,
     headers: { "content-type": problemContentType },
   });
 }
@@ -62,17 +63,22 @@ function problemResponse(status: number, code: ProblemCode, title: string, detai
 // Every failure reaches callers as a Problem (ADR 0002), so screens branch
 // on `code`:
 // - an error response whose body isn't a problem, such as a proxy's HTML
-//   page, becomes one with the same status: not_found for a 404,
-//   internal_error otherwise
+//   page, becomes one: not_found for a 404, internal_error with the same
+//   status for a 5xx the catalogue lists, internal_error 502 for anything
+//   else
 // - a request that gets no response at all becomes a 503 internal_error
 const errorsAsProblems: Middleware = {
   async onResponse({ response }) {
     if (response.ok || (await problemIn(response))) return undefined;
-    const status = response.status >= 400 && response.status <= 599 ? response.status : 502;
-    return problemResponse(status, status === 404 ? "not_found" : "internal_error", response.statusText || "Error");
+    const { status } = response;
+    const detail = `The API answered with HTTP ${status}.`;
+    if (status === 404) return problemResponse(problem("not_found", { detail }));
+    return problemResponse(
+      problem("internal_error", { detail, ...(isProblemStatus("internal_error", status) ? { status } : { status: 502 }) }),
+    );
   },
   onError() {
-    return problemResponse(503, "internal_error", "Service Unavailable", "The API could not be reached.");
+    return problemResponse(problem("internal_error", { status: 503, detail: "The API could not be reached." }));
   },
 };
 

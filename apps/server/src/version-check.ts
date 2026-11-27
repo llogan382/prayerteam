@@ -36,7 +36,6 @@ export function appVersionCheck(minimumVersions: MinimumVersionsProvider) {
     const platform = AppPlatform.safeParse(request.headers[appPlatformHeader]);
     if (!parsedVersion.success || !platform.success) {
       throw new ProblemError(
-        400,
         "invalid_app_version",
         `Send ${appVersionHeader} as MAJOR.MINOR.PATCH with ${appPlatformHeader} as ios, android or web.`,
       );
@@ -45,7 +44,7 @@ export function appVersionCheck(minimumVersions: MinimumVersionsProvider) {
 
     const minimum = (await minimumVersions())[platform.data];
     if (compareAppVersions(parsedVersion.data, minimum) < 0) {
-      throw new ProblemError(426, "upgrade_required", `This app needs version ${minimum} or newer.`);
+      throw new ProblemError("upgrade_required", `This app needs version ${minimum} or newer.`);
     }
   };
 }

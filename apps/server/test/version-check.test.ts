@@ -1,6 +1,6 @@
-import { Problem } from "@prayerteam/domain";
 import { describe, expect, it } from "vitest";
 import { testApp } from "./app.ts";
+import { expectProblem } from "./problem.ts";
 
 const minimums = { ios: "2.0.0", android: "3.1.0" };
 
@@ -13,12 +13,6 @@ const appHeaders = (version: string, platform: string) => ({
   "x-app-version": version,
   "x-app-platform": platform,
 });
-
-async function expectProblem(response: Awaited<ReturnType<typeof call>>, status: number, code: string) {
-  expect(response.statusCode).toBe(status);
-  expect(response.headers["content-type"]).toMatch(/^application\/problem\+json/);
-  expect(Problem.parse(response.json())).toMatchObject({ status, code });
-}
 
 describe("app version check", () => {
   it("never applies to /api/health, even far below the minimum", async () => {
@@ -35,7 +29,7 @@ describe("app version check", () => {
     ["an unknown platform", appHeaders("9.0.0", "windows")],
     ["a version with no platform", { "x-app-version": "9.0.0" }],
   ])("rejects %s with 400 invalid_app_version", async (_, headers) => {
-    await expectProblem(await call("/api/meta", headers), 400, "invalid_app_version");
+    expectProblem(await call("/api/meta", headers), "invalid_app_version");
   });
 
   it.each([
@@ -48,13 +42,13 @@ describe("app version check", () => {
     ["android", "3.10.0", 200],
   ])("%s %s against its own minimum gives %i", async (platform, version, status) => {
     const response = await call("/api/meta", appHeaders(version, platform));
-    if (status === 426) await expectProblem(response, 426, "upgrade_required");
+    if (status === 426) expectProblem(response, "upgrade_required");
     else expect(response.statusCode).toBe(200);
   });
 
   it("raising one platform's minimum doesn't affect the other", async () => {
     const raised = { ios: "50.0.0", android: "1.0.0" };
-    await expectProblem(await call("/api/meta", appHeaders("2.0.0", "ios"), raised), 426, "upgrade_required");
+    expectProblem(await call("/api/meta", appHeaders("2.0.0", "ios"), raised), "upgrade_required");
     expect((await call("/api/meta", appHeaders("2.0.0", "android"), raised)).statusCode).toBe(200);
   });
 

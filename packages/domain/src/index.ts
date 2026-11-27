@@ -2,7 +2,15 @@
 // Erasable-only syntax and explicit `.ts` import extensions, so Node can strip types (research doc §4.3).
 export { ProductInfo, productInfo, productName, productTagline } from "./product.ts";
 export { HealthResponse, MeResponse, MetaResponse } from "./meta.ts";
-export { FieldError, Problem, ProblemCode, problemCodes, problemContentType } from "./problem.ts";
+export {
+  FieldError,
+  isProblemStatus,
+  Problem,
+  ProblemCode,
+  problem,
+  problemCodes,
+  problemContentType,
+} from "./problem.ts";
 export { ListQuery, Page } from "./pagination.ts";
 export { PlaceholderItem, PlaceholderItemPage } from "./placeholder.ts";
 export {

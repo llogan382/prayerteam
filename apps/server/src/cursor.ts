@@ -7,7 +7,7 @@ class InvalidCursorError extends ProblemError {
   override name = "InvalidCursorError";
 
   constructor() {
-    super(400, "invalid_cursor", "Pass back a nextCursor exactly as this API returned it.");
+    super("invalid_cursor", "Pass back a nextCursor exactly as this API returned it.");
   }
 }
 

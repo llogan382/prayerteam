@@ -1,10 +1,10 @@
-import { Problem } from "@prayerteam/domain";
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { App } from "../src/app.ts";
 import { revokeAllSessions } from "../src/auth/accounts.ts";
 import { appOrigin } from "../src/auth/auth.ts";
-import { expectUnauthenticated, me, origin, sessionCookie, signIn, testAccount, testApp } from "./app.ts";
+import { me, origin, sessionCookie, signIn, testAccount, testApp } from "./app.ts";
+import { expectProblem } from "./problem.ts";
 
 const dayMs = 24 * 60 * 60 * 1000;
 
@@ -41,7 +41,7 @@ describe("session expiry", () => {
     const account = await testAccount(app);
     const { cookie } = await signIn(app, account.email, account.password);
     clock.advance(91 * dayMs);
-    await expectUnauthenticated(await me(app, cookie));
+    expectProblem(await me(app, cookie), "unauthenticated");
   });
 });
 
@@ -63,8 +63,8 @@ describe("revoke all sessions", () => {
 
     expect((await app.inject({ method: "POST", url: `/api/test/accounts/${ann.id}/revoke` })).statusCode).toBe(200);
 
-    await expectUnauthenticated(await me(app, annPhone.cookie));
-    await expectUnauthenticated(await me(app, annLaptop.cookie));
+    expectProblem(await me(app, annPhone.cookie), "unauthenticated");
+    expectProblem(await me(app, annLaptop.cookie), "unauthenticated");
     expect((await me(app, bobPhone.cookie)).statusCode).toBe(200);
   });
 });
@@ -84,7 +84,7 @@ describe("native apps", () => {
     // A cookie-authenticated auth request from the app passes the origin check.
     const signOut = await app.inject({ method: "POST", url: "/api/auth/sign-out", headers: { ...native, cookie: cookie! } });
     expect(signOut.statusCode).toBe(200);
-    await expectUnauthenticated(await me(app, cookie, native));
+    expectProblem(await me(app, cookie, native), "unauthenticated");
   });
 });
 
@@ -122,8 +122,7 @@ describe("app version on auth routes", () => {
     const account = await testAccount(app);
     for (const platform of ["ios", "android"]) {
       const response = await signInAs(app, account.email, account.password, platform);
-      expect(response.statusCode, platform).toBe(426);
-      expect(Problem.parse(response.json())).toMatchObject({ code: "upgrade_required" });
+      expectProblem(response, "upgrade_required");
       expect(response.cookies, platform).toEqual([]);
     }
     expect((await signInAs(app, account.email, account.password, "web")).statusCode).toBe(200);

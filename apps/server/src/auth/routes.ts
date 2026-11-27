@@ -62,7 +62,7 @@ export function requireSession(auth: Auth) {
       headers: headersOf(request),
       returnHeaders: true,
     });
-    if (!session) throw new ProblemError(401, "unauthenticated", "Sign in to continue.");
+    if (!session) throw new ProblemError("unauthenticated", "Sign in to continue.");
     // A session more than a day old was just extended; send the refreshed
     // cookie so the browser's copy is extended too.
     const cookies = headers.getSetCookie();
