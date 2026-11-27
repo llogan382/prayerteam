@@ -1,5 +1,6 @@
 import type { Database } from "@prayerteam/db";
 import { schema } from "@prayerteam/db";
+import { expo } from "@better-auth/expo";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
@@ -12,9 +13,13 @@ export interface AuthConfig {
   // CloudFront, so the cookie stays same-origin (ADR 0003, ADR 0005).
   baseUrl: string;
   // Origins allowed to make cookie-authenticated requests: the web
-  // origin(s), and the app's URL scheme once native sign-in lands.
+  // origin(s). The app's own scheme is always added (appOrigin).
   trustedOrigins: string[];
 }
+
+// What the native app sends as its origin: its URL scheme (app.json), set
+// by Better Auth's Expo client as the expo-origin header.
+export const appOrigin = "prayerteam://";
 
 const day = 60 * 60 * 24;
 
@@ -33,7 +38,10 @@ export function createAuth(db: Database, config: AuthConfig) {
     secret: config.secret,
     baseURL: config.baseUrl,
     basePath: "/api/auth",
-    trustedOrigins: config.trustedOrigins,
+    trustedOrigins: [...config.trustedOrigins, appOrigin],
+    // Native apps keep the session in secure storage and send it as a
+    // cookie header; the plugin takes their expo-origin as the Origin.
+    plugins: [expo()],
     user: { modelName: "account" },
     account: { modelName: "credential" },
     emailAndPassword: {
@@ -53,6 +61,10 @@ export function createAuth(db: Database, config: AuthConfig) {
       cookieCache: { enabled: false },
     },
     advanced: {
+      // Explicit, because Better Auth turns both checks off when NODE_ENV is
+      // "test", and the tests must see what production does.
+      disableOriginCheck: false,
+      disableCSRFCheck: false,
       // Postgres 18 generates UUIDv7 primary keys (packages/db conventions).
       database: { generateId: false },
       // Only /api reads the session; nothing else on the domain gets it.

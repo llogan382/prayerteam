@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/expo": "catalog:",
     "@fastify/swagger": "catalog:",
     "@prayerteam/db": "workspace:*",
     "@prayerteam/domain": "workspace:*",

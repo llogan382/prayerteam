@@ -39,6 +39,7 @@ catalog:
   # generate its tables into packages/db.
   better-auth: 1.7.28
   auth: 1.7.28
+  "@better-auth/expo": 1.7.28
   # Typed API client (packages/api-client, ADR 0002)
   openapi-typescript: 7.13.0
   openapi-fetch: 0.17.0

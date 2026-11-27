@@ -75,6 +75,16 @@ export async function createAccount(
   return toAccount(user);
 }
 
+// Revoke all sessions for an Account (#32): every device is signed out, and
+// the very next request from any of them gets 401 (the cookie cache is off).
+// Member removal and Account deletion call it (#23); password reset and
+// change revoke sessions inside Better Auth (ADR 0003). Like createAccount,
+// it uses Better Auth's internal adapter: re-check it when upgrading.
+export async function revokeAllSessions(auth: Auth, accountId: string): Promise<void> {
+  const context = await auth.$context;
+  await context.internalAdapter.deleteUserSessions(accountId);
+}
+
 function hasCode(error: unknown, code: string): boolean {
   for (let e: unknown = error; e; e = (e as { cause?: unknown }).cause) {
     if ((e as { code?: unknown }).code === code) return true;

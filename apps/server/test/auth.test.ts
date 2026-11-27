@@ -1,19 +1,8 @@
-import { Problem } from "@prayerteam/domain";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import type { App } from "../src/app.ts";
 import { AccountEmailTakenError } from "../src/auth/accounts.ts";
-import { origin, signIn, testAccount, testApp, testAuthConfig } from "./app.ts";
-
-const me = (app: App, cookie?: string) =>
-  app.inject({ method: "GET", url: "/api/me", headers: cookie ? { cookie } : {} });
-
-async function expectUnauthenticated(response: Awaited<ReturnType<typeof me>>) {
-  expect(response.statusCode).toBe(401);
-  expect(response.headers["content-type"]).toMatch(/^application\/problem\+json/);
-  expect(Problem.parse(response.json())).toMatchObject({ status: 401, code: "unauthenticated" });
-}
+import { expectUnauthenticated, me, origin, signIn, testAccount, testApp, testAuthConfig } from "./app.ts";
 
 describe("sign-in", () => {
   it("with the right password starts a session that GET /api/me accepts", async () => {
@@ -33,7 +22,7 @@ describe("sign-in", () => {
     ] as const) {
       const app = await testApp({ auth: testAuthConfig(baseUrl) });
       const account = await testAccount(app);
-      const { setCookie } = await signIn(app, account.email, account.password, baseUrl);
+      const { setCookie } = await signIn(app, account.email, account.password, { origin: baseUrl });
       expect(setCookie, baseUrl).toMatchObject({ httpOnly: true, sameSite: "Lax", path: "/api" });
       expect(Boolean(setCookie?.secure), baseUrl).toBe(secure);
     }
