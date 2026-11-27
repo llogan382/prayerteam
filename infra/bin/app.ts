@@ -1,6 +1,6 @@
-import { App } from 'aws-cdk-lib';
-import { settingsFromContext } from '../src/settings.ts';
-import { createStacks } from '../src/stacks.ts';
+import { App } from "aws-cdk-lib";
+import { settingsFromContext } from "../src/settings.ts";
+import { createStacks } from "../src/stacks.ts";
 
 const app = new App();
 createStacks(

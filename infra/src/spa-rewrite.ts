@@ -7,9 +7,9 @@
 // Keep `rewriteUri` to plain code (no imports or helpers): its source text becomes the
 // CloudFront Function, which runs on the cloudfront-js-2.0 runtime.
 export function rewriteUri(uri: string): string {
-  if (uri.indexOf('/.well-known/') === 0) return uri;
-  const lastSegment = uri.slice(uri.lastIndexOf('/') + 1);
-  return lastSegment.indexOf('.') === -1 ? '/index.html' : uri;
+  if (uri.indexOf("/.well-known/") === 0) return uri;
+  const lastSegment = uri.slice(uri.lastIndexOf("/") + 1);
+  return lastSegment.indexOf(".") === -1 ? "/index.html" : uri;
 }
 
 export const spaRewriteFunctionCode = `${rewriteUri.toString()}

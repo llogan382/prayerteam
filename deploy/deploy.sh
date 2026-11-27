@@ -8,24 +8,29 @@
 # 3. Start it in the idle slot.
 # 4. Poll the idle slot's /api/health/ready directly. On timeout, stop it.
 # 5. Point Caddy at the idle slot and reload (no dropped connections).
-# 6. Record the new active slot.
-# 7. SIGTERM the old slot and wait for its grace period.
+# 6. SIGTERM the old slot and wait for its grace period.
+# 7. Record the new active slot.
 #
-# Any failure before step 5 leaves the old slot serving and exits non-zero.
-# Rollback is `deploy.sh <previous-sha>`; migrations are expand-then-contract.
+# Any failure before step 5 completes leaves the old slot serving and exits
+# non-zero. Rollback is `deploy.sh <previous-sha>`; migrations are
+# expand-then-contract.
 #
-# Run by the deploy SSM document, which sets the environment below. The CI
-# stand-in sets SKIP_ECR_LOGIN=1, SERVER_ENV_FILE, ORIGIN_SECRET and
-# COMPOSE_OVERRIDE instead of reading AWS.
+# Run by the deploy SSM document (infra/src/app-stack.ts), which sets:
+#   AWS_REGION, IMAGE_REPOSITORY, ORIGIN_DOMAIN,
+#   ORIGIN_SECRET_PARAMETER  the SecureString Caddy checks against,
+#   SERVER_ENV_FILE          the server's environment, written by the document.
+# The CI stand-in sets SKIP_ECR_LOGIN=1, ORIGIN_SECRET and COMPOSE_OVERRIDE
+# instead of reading AWS.
 set -euo pipefail
 
 sha="${1:?usage: deploy.sh <sha>}"
 cd "$(dirname "$0")"
 
-: "${IMAGE_REPOSITORY:?}"
-: "${AWS_REGION:=us-east-1}"
+: "${IMAGE_REPOSITORY:?}" "${AWS_REGION:?}" "${SERVER_ENV_FILE:?}"
 READY_TIMEOUT="${READY_TIMEOUT:-90}"
-STOP_TIMEOUT="${STOP_TIMEOUT:-40}"
+CADDY_TIMEOUT="${CADDY_TIMEOUT:-30}"
+# The port each server slot listens on inside its container (compose.yaml).
+export SERVER_PORT=3000
 image="$IMAGE_REPOSITORY:$sha"
 
 log() { echo "deploy[$sha]: $*" >&2; }
@@ -37,7 +42,8 @@ compose() {
 }
 
 mkdir -p state
-# One deploy at a time, whether from SSM or a manual run.
+# One deploy at a time. The workflow's concurrency group covers CI, but a
+# hand-run rollback could still overlap a workflow deploy.
 exec 9> state/deploy.lock
 if ! flock --nonblock 9; then
   log "another deploy is running"
@@ -54,29 +60,15 @@ log "active slot: ${active:-none}, deploying to: $idle"
 
 # --- configuration ---------------------------------------------------------
 if [[ -z "${ORIGIN_SECRET:-}" ]]; then
-  ORIGIN_SECRET="$(aws ssm get-parameter --region "$AWS_REGION" \
-    --name "${SSM_PREFIX:?}/cloudfront-origin-secret" --query Parameter.Value --output text)"
+  ORIGIN_SECRET="$(aws ssm get-parameter --region "$AWS_REGION" --with-decryption \
+    --name "${ORIGIN_SECRET_PARAMETER:?}" --query Parameter.Value --output text)"
 fi
 if [[ -z "$ORIGIN_SECRET" || "$ORIGIN_SECRET" == None ]]; then
   log "the CloudFront origin secret is empty; refusing to start Caddy without it"
   exit 1
 fi
 export ORIGIN_SECRET
-
-if [[ -n "${SERVER_ENV_FILE:-}" ]]; then
-  cp "$SERVER_ENV_FILE" state/server.env.next
-else
-  # The server builds its config from these plus SSM and Secrets Manager.
-  cat > state/server.env.next <<EOF
-NODE_ENV=production
-AWS_REGION=$AWS_REGION
-SSM_PREFIX=${SSM_PREFIX:?}
-DATABASE_HOST=${DATABASE_HOST:?}
-DATABASE_PORT=${DATABASE_PORT:?}
-DATABASE_NAME=${DATABASE_NAME:?}
-DATABASE_SECRET_ARN=${DATABASE_SECRET_ARN:?}
-EOF
-fi
+cp "$SERVER_ENV_FILE" state/server.env.next
 mv state/server.env.next state/server.env
 
 # --- 1. pull -----------------------------------------------------------------
@@ -102,7 +94,7 @@ compose up --detach --no-deps --force-recreate "$idle"
 
 # --- 4. readiness --------------------------------------------------------------
 # Inside the slot's own container, so it bypasses Caddy and needs no port.
-probe='fetch("http://127.0.0.1:3000/api/health/ready").then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))'
+probe="fetch('http://127.0.0.1:$SERVER_PORT/api/health/ready').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
 deadline=$((SECONDS + READY_TIMEOUT))
 until compose exec -T "$idle" node -e "$probe" > /dev/null 2>&1; do
   if ((SECONDS >= deadline)); then
@@ -115,32 +107,51 @@ until compose exec -T "$idle" node -e "$probe" > /dev/null 2>&1; do
 done
 log "$idle is ready"
 
-# --- 5 and 6. switch Caddy, record -------------------------------------------------------------
+# --- 5. switch Caddy -------------------------------------------------------------
 previous_upstream="$(cat state/upstream.caddy 2>/dev/null || true)"
-printf 'reverse_proxy %s:3000\n' "$idle" > state/upstream.caddy.next
+
+# Put back the old upstream, stop the new slot and fail the deploy.
+abandon_switch() {
+  log "$1; ${active:-no slot} keeps serving"
+  if [[ -n "$previous_upstream" ]]; then
+    printf '%s\n' "$previous_upstream" > state/upstream.caddy
+    compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile || true
+  fi
+  compose stop --timeout 5 "$idle" || true
+  exit 1
+}
+
+printf 'reverse_proxy %s:%s\n' "$idle" "$SERVER_PORT" > state/upstream.caddy.next
 mv state/upstream.caddy.next state/upstream.caddy
 # Starts Caddy on the first deploy and recreates it only if its compose
 # config (image, environment) changed; otherwise a graceful reload.
 compose up --detach --no-deps caddy
+# A Caddy that has just started needs a moment before its admin API answers.
+# 127.0.0.1, not localhost: in the Alpine image localhost resolves to ::1 first.
+deadline=$((SECONDS + CADDY_TIMEOUT))
+until compose exec -T caddy wget -q -O /dev/null http://127.0.0.1:2019/config/ > /dev/null 2>&1; do
+  if ((SECONDS >= deadline)); then abandon_switch "Caddy's admin API did not answer after ${CADDY_TIMEOUT}s"; fi
+  sleep 1
+done
 if ! compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile; then
-  log "Caddy rejected the new upstream; reverting"
-  if [[ -n "$previous_upstream" ]]; then printf '%s\n' "$previous_upstream" > state/upstream.caddy; fi
-  compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile || true
-  compose stop --timeout 5 "$idle" || true
-  exit 1
+  abandon_switch "Caddy rejected the new upstream"
 fi
 log "Caddy now sends traffic to $idle"
-# Record before retiring the old slot, so a failed stop can't leave the
-# state naming a slot that no longer serves.
+
+# --- 6. retire the old slot -------------------------------------------------------
+# Waits for the slot's stop_grace_period (compose.yaml). Caddy no longer
+# sends it traffic, so a failed stop is only a warning: it must not skip
+# step 7, or the state would name a slot that no longer serves.
+if [[ -n "$active" ]]; then
+  log "stopping $active"
+  compose stop "$active" || log "warning: $active did not stop cleanly"
+fi
+
+# --- 7. record ---------------------------------------------------------------------
 echo "$image" > "state/$idle.image"
 echo "$idle" > state/active-slot
 
-# --- 7. retire the old slot -------------------------------------------------------
-if [[ -n "$active" ]]; then
-  log "stopping $active"
-  compose stop --timeout "$STOP_TIMEOUT" "$active"
-fi
-
-# Keep the disk small; rollback images are re-pulled from ECR when needed.
+# Keep the 16 GB disk from filling over months of deploys; rollback images
+# are re-pulled from ECR when needed.
 docker image prune --all --force --filter "until=168h" > /dev/null || true
 log "done: $idle serves $image"

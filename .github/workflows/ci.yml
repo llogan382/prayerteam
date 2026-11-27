@@ -37,7 +37,7 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @prayerteam/mobile exec playwright install --with-deps chromium webkit
 
-      - name: Type check, unit and CDK assertion tests, web build and end-to-end tests
+      - name: Type check, unit and CDK assertion tests, cdk synth, web build and end-to-end tests
         run: pnpm run ci
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

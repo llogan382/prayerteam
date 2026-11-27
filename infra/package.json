@@ -6,8 +6,9 @@
   "scripts": {
     "cdk": "cdk",
     "synth": "cdk synth --quiet",
+    "synth:check": "CDK_DEFAULT_ACCOUNT=111111111111 cdk synth --quiet -c domain=prayer.example.org -c originDomain=origin.prayer.example.org -c hostedZoneId=Z0000000000000 -c hostedZoneName=example.org",
     "test": "vitest run",
-    "check-types": "tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "aws-cdk-lib": "catalog:",

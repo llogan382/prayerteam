@@ -1,26 +1,24 @@
-import { describe, expect, it } from 'vitest';
-import { settingsFromContext } from '../src/settings.ts';
+import { describe, expect, it } from "vitest";
+import { settingsFromContext } from "../src/settings.ts";
+import { settings } from "./stacks.ts";
 
-const context: Record<string, string> = {
-  domain: 'prayer.example.org',
-  originDomain: 'origin.prayer.example.org',
-  hostedZoneId: 'Z0123456789ABC',
-  hostedZoneName: 'example.org',
-  githubRepo: 'llogan382/prayerteam',
-};
+const { account, originSecretVersion, ...strings } = settings;
+const context: Record<string, unknown> = strings;
 
-describe('settings from CDK context', () => {
-  it('reads every setting', () => {
-    expect(settingsFromContext((key) => context[key], '111111111111')).toEqual({
-      ...context,
-      account: '111111111111',
-    });
+describe("settings from CDK context", () => {
+  it("reads every setting, with origin secret version 1 by default", () => {
+    expect(settingsFromContext((key) => context[key], account)).toEqual(settings);
   });
 
-  it('names every missing setting', () => {
-    const { domain, hostedZoneId, ...partial } = context;
+  it("reads the origin secret version from `-c` as a string", () => {
+    const withVersion: Record<string, unknown> = { ...context, originSecretVersion: "3" };
+    expect(settingsFromContext((key) => withVersion[key], account).originSecretVersion).toBe(3);
+  });
+
+  it("names every missing or invalid setting", () => {
+    const { domain, hostedZoneId, ...partial }: Record<string, unknown> = { ...strings, originSecretVersion: "latest" };
     expect(() => settingsFromContext((key) => partial[key], undefined)).toThrow(
-      /Missing CDK settings: domain, hostedZoneId, account/,
+      /Missing or invalid CDK settings: domain, hostedZoneId, account.*, originSecretVersion/,
     );
   });
 });

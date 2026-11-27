@@ -30,7 +30,7 @@
         "CI"
       ]
     },
-    "check-types": {
+    "typecheck": {
       "dependsOn": [
         "topo"
       ]
@@ -38,6 +38,14 @@
     "test": {
       "dependsOn": [
         "topo"
+      ]
+    },
+    "synth:check": {
+      "dependsOn": [
+        "topo"
+      ],
+      "outputs": [
+        "cdk.out/**"
       ]
     }
   }

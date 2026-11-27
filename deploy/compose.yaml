@@ -1,31 +1,36 @@
 # The production compose project on the API instance (ADR 0005). deploy.sh
-# drives it; nothing else should run `docker compose up` here. Caddy is the
-# only service that publishes host ports. `blue` and `green` are the two
-# server slots: one is active, the other is idle or mid-deploy.
+# drives it and sets the variables below; nothing else should run
+# `docker compose up` here. Caddy is the only service that publishes host
+# ports. `blue` and `green` are the two server slots: one is active, the
+# other is idle or mid-deploy.
 name: prayerteam
+
+# Docker's json-file driver: JSON lines, rotated, shipped to CloudWatch by
+# the CloudWatch agent (infra/src/user-data.ts). The tag names the container
+# in every line.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+    tag: "{{.Name}}"
 
 x-server: &server
   restart: unless-stopped
   env_file: state/server.env
   environment:
-    PORT: "3000"
+    PORT: ${SERVER_PORT:?SERVER_PORT must be set}
     # Two server processes and Caddy must fit in 1 GB next to Docker.
     NODE_OPTIONS: --max-old-space-size=224
   mem_limit: 320m
   # Longer than the server's own job grace period, so in-flight requests and
-  # jobs finish before Docker sends SIGKILL.
+  # jobs finish before Docker sends SIGKILL. deploy.sh's `compose stop` uses it.
   stop_grace_period: 40s
-  logging: &awslogs
-    driver: awslogs
-    options:
-      awslogs-region: ${AWS_REGION:-us-east-1}
-      awslogs-group: ${CONTAINER_LOG_GROUP:-unset}
-      tag: "{{.Name}}"
-      mode: non-blocking
+  logging: *logging
 
 services:
   caddy:
-    image: caddy:2.11.9-alpine
+    image: caddy:2.11.9-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
     restart: unless-stopped
     ports:
       - "80:80"
@@ -42,7 +47,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     mem_limit: 64m
-    logging: *awslogs
+    logging: *logging
 
   blue:
     <<: *server
@@ -59,7 +64,7 @@ services:
     env_file: state/server.env
     restart: "no"
     profiles: ["tools"]
-    logging: *awslogs
+    logging: *logging
 
 volumes:
   caddy_data:

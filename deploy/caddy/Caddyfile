@@ -6,10 +6,13 @@
 
 {
 	servers {
-		# Only CloudFront can reach 443 (security group prefix list), and port
-		# 80 only redirects, so every proxied request came through CloudFront.
-		# Trusting it keeps CloudFront's X-Forwarded-For and appends the
-		# CloudFront address, rather than replacing the header.
+		# Trusting every peer keeps CloudFront's X-Forwarded-For and appends
+		# the CloudFront address, rather than replacing the header. That is
+		# safe only because no other peer's request is ever proxied:
+		# - 443 accepts only CloudFront's origin-facing prefix list (security group)
+		# - of those, only our distribution has the origin secret (below)
+		# - port 80 only answers ACME challenges and redirects
+		# CloudFront's ranges change too often to list here instead.
 		trusted_proxies static 0.0.0.0/0 ::/0
 	}
 }
