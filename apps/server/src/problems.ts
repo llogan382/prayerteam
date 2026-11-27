@@ -2,6 +2,7 @@ import { type Problem, type ProblemCode, problemContentType } from "@prayerteam/
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod";
 import { STATUS_CODES } from "node:http";
+import { InvalidCursorError } from "./cursor.ts";
 
 // Sends a problem+json response. `type` is about:blank, so `title` is the
 // HTTP status phrase and `code` carries the meaning (RFC 9457 §4.2.1).
@@ -34,6 +35,10 @@ export function handleProblems(app: FastifyInstance): void {
           message: issue.message ?? "Invalid value",
         })),
       });
+    }
+    // A list cursor that wasn't one we issued, or was altered.
+    if (error instanceof InvalidCursorError) {
+      return sendProblem(reply, 400, "invalid_cursor");
     }
     // Fastify's own client errors (malformed JSON, unsupported content
     // type, body too large) keep their 4xx status. Their messages describe

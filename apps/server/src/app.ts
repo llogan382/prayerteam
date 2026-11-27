@@ -8,6 +8,7 @@ import {
 } from "fastify-type-provider-zod";
 import serverPackage from "../package.json" with { type: "json" };
 import { openApiComponents, transformRoute } from "./openapi.ts";
+import { placeholderRoutes } from "./placeholder.ts";
 import { handleProblems } from "./problems.ts";
 
 // Everything the app needs from outside, passed in so tests can build an
@@ -55,6 +56,8 @@ export async function buildApp(config: AppConfig) {
         { schema: { response: { 200: MetaResponse } } },
         async () => ({ name: productName }),
       );
+
+      await api.register(placeholderRoutes);
 
       if (config.testRoutes) await api.register(config.testRoutes);
     },
