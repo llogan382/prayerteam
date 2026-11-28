@@ -1,0 +1,27 @@
+node_modules/
+.turbo/
+dist/
+
+# Expo
+.expo/
+expo-env.d.ts
+apps/mobile/ios/
+apps/mobile/android/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+.DS_Store
+*.log
+.env*.local
+
+# fallow analysis cache
+.fallow/
+
+# AWS CDK
+cdk.out/
+
+# Better Auth's raw generated schema (apps/server auth:generate)
+.better-auth/

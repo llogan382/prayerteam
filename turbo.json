@@ -1,0 +1,85 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "tasks": {
+    "topo": {
+      "dependsOn": [
+        "^topo"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "export:web": {
+      "outputs": [
+        "dist/**"
+      ],
+      "dependsOn": [
+        "topo"
+      ]
+    },
+    "test:e2e": {
+      "dependsOn": [
+        "export:web"
+      ],
+      "outputs": [
+        "playwright-report/**",
+        "test-results/**"
+      ],
+      "passThroughEnv": [
+        "CI"
+      ]
+    },
+    "generate": {
+      "dependsOn": [
+        "topo"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!openapi.json"
+      ],
+      "outputs": [
+        "openapi.json"
+      ]
+    },
+    "@prayerteam/api-client#generate": {
+      "dependsOn": [
+        "@prayerteam/server#generate"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!src/schema.ts"
+      ],
+      "outputs": [
+        "src/schema.ts"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": [
+        "topo",
+        "generate"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "topo"
+      ],
+      "passThroughEnv": [
+        "DATABASE_ADMIN_URL"
+      ]
+    },
+    "synth:check": {
+      "dependsOn": [
+        "topo"
+      ],
+      "outputs": [
+        "cdk.out/**"
+      ]
+    },
+    "db:check": {
+      "dependsOn": [
+        "topo"
+      ]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@prayerteam/api-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-typescript ../../apps/server/openapi.json --output src/schema.ts",
+    "typecheck": "tsc6 --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prayerteam/domain": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "openapi-fetch": "catalog:",
+    "openapi-react-query": "catalog:"
+  },
+  "devDependencies": {
+    "openapi-typescript": "catalog:",
+    "typescript": "catalog:ts6",
+    "vitest": "catalog:"
+  }
+}

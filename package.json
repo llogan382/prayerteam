@@ -1,0 +1,24 @@
+{
+  "name": "prayerteam",
+  "private": true,
+  "packageManager": "pnpm@12.23.0",
+  "engines": {
+    "node": ">=24.12"
+  },
+  "scripts": {
+    "dev": "docker compose up --detach --wait && turbo run dev",
+    "db:migrate": "pnpm --filter @prayerteam/db db:migrate",
+    "db:seed": "pnpm --filter @prayerteam/server seed",
+    "export:web": "turbo run export:web",
+    "generate": "turbo run generate",
+    "test:e2e": "turbo run test:e2e",
+    "fallow": "fallow --quiet",
+    "ci": "fallow --quiet && turbo run typecheck test db:check synth:check test:e2e",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "fallow": "catalog:",
+    "turbo": "catalog:"
+  }
+}

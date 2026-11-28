@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>%WEB_TITLE%</title>
+    <!-- Link previews (#30): the same generic text for every route, never a
+         Church's or Member's content. The app is one page (ADR 0001), so
+         these are static. Expo fills in only the first %WEB_TITLE%, so
+         og:title names the app directly (e2e/link-preview.spec.ts checks
+         the two agree). -->
+    <meta name="description" content="Pray for one another. Share prayer requests with your church." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Prayer Team" />
+    <meta property="og:description" content="Pray for one another. Share prayer requests with your church." />
+    <meta name="twitter:card" content="summary" />
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript> You need to enable JavaScript to run this app. </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  </body>
+</html>

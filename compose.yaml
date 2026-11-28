@@ -1,0 +1,25 @@
+# Local services for `pnpm dev` and the tests: Postgres 18 (ADR 0004).
+# Production uses RDS (infra/) and deploy/compose.yaml on the instance.
+name: prayerteam-dev
+
+services:
+  postgres:
+    image: postgres:18.7@sha256:64c8b0d31e4ab6ea665e8426ea406a94bf52de3c05b3a4a8bf713704eefa9328
+    environment:
+      POSTGRES_USER: prayerteam
+      POSTGRES_PASSWORD: prayerteam
+      POSTGRES_DB: prayerteam
+    ports:
+      # 54320, not 5432, so it never clashes with a Postgres installed on the host.
+      - "127.0.0.1:54320:5432"
+    volumes:
+      # Postgres 18's image keeps its data under /var/lib/postgresql/18.
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prayerteam"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres:
